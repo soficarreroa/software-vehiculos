@@ -32,7 +32,7 @@ interface SidebarProps {
   setIsOpen: (open: boolean) => void;
 }
 
-export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
+export default function Sidebar({ isOpen = true, setIsOpen = () => {} }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -88,11 +88,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-            {!isCollapsed && (
-              <span className="text-lg font-semibold text-gray-800">
-                Menú
-              </span>
-            )}
+            {!isCollapsed && <span className="text-lg font-semibold text-gray-800">Menú</span>}
             {/* Desktop collapse button */}
             {!isMobile && (
               <button
@@ -127,9 +123,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                       {item.icon}
                     </span>
                     {(!isCollapsed || isMobile) && (
-                      <span className="text-sm font-medium whitespace-nowrap">
-                        {item.label}
-                      </span>
+                      <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
                     )}
                   </a>
                 </li>
@@ -139,11 +133,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200">
-            {!isCollapsed && (
-              <p className="text-xs text-gray-400 text-center">
-                © 2026
-              </p>
-            )}
+            {!isCollapsed && <p className="text-xs text-gray-400 text-center">© 2026</p>}
           </div>
         </div>
       </aside>
