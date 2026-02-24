@@ -1,0 +1,55 @@
+:root {
+  /* Sidebar */
+  --sidebar-color: #1e293b;
+  --sidebar-hover: #334155;
+  --sidebar-text: #94a3b8;
+  --sidebar-text-active: #ffffff;
+
+  /* Backgrounds */
+  --bg-color: #fcfcfd;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg-hover: #f8fafc;
+
+  /* Primary */
+  --primary-color: #3b82f6;
+  --primary-bg: #eff6ff;
+
+  /* Text */
+  --text-main: #334155;
+  --text-light: #64748b;
+  --text-primary: #0f172a;
+
+  /* Button Colors */
+  --btn-green: #16a34a;
+  --btn-red: #991b1b;
+  --btn-yellow: #ca8a04;
+  --btn-orange: #ea580c;
+
+  /* Pill Colors */
+  --pill-success-bg: #dcfce7;
+  --pill-success-text: #166534;
+  --pill-warning-bg: #fef9c3;
+  --pill-warning-text: #854d0e;
+  --pill-error-bg: #fee2e2;
+  --pill-error-text: #991b1b;
+
+  /* Info Colors */
+  --info-success-bg: #f0fdf4;
+  --info-success-border: #bbf7d0;
+  --info-warning-bg: #fefce8;
+  --info-warning-border: #fef08a;
+  --info-error-bg: #fef2f2;
+  --info-error-border: #fee2e2;
+
+  /* Card */
+  --card-bg: #ffffff;
+  --card-border: #f1f5f9;
+  --card-shadow: rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: rgba(0, 0, 0, 0.1);
+
+  /* Emergency */
+  --danger-soft: #fef2f2;
+  --danger-text: #991b1b;
+  --danger-border: #fee2e2;
+}
