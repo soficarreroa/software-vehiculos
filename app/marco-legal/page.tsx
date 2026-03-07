@@ -1,5 +1,4 @@
-import MarcoLegal from "../components/MarcoLegal/MarcoLegal";
-
+import MarcoLegal from "../components/pages/MarcoLegal/MarcoLegal";
 const Page = () => {
   return <MarcoLegal />;
 };
