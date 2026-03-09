@@ -1,0 +1,165 @@
+:root {
+  --bg-color: #fcfcfd;
+  --sidebar-color: #1e293b;
+  --primary-accent: #3b82f6;
+  --text-main: #334155;
+  --text-light: #64748b;
+  --card-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --success-color: #10b981;
+}
+
+.main {
+  flex: 1;
+  padding: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.headerMain {
+  margin-bottom: 30px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--text-light);
+  margin-top: 5px;
+}
+
+.searchContainer {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.searchInput {
+  flex: 1;
+}
+
+.filterSelect {
+  min-width: 180px;
+}
+
+.gridWorkshops {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.workshopCard {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.workshopCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.workshopImage {
+  height: 140px;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.workshopBody {
+  padding: 20px;
+}
+
+.workshopBadge {
+  background: #eff6ff;
+  color: var(--primary-accent);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.workshopName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 10px 0 5px 0;
+  color: #0f172a;
+}
+
+.workshopInfo {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.workshopFooter {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rating {
+  color: #f59e0b;
+  font-weight: bold;
+}
+
+.ratingSmall {
+  color: var(--text-light);
+  font-weight: normal;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 20px;
+  }
+
+  .searchContainer {
+    flex-direction: column;
+  }
+
+  .gridWorkshops {
+    grid-template-columns: 1fr;
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--card-bg);
+  border: 1px dashed var(--border-color);
+  border-radius: 16px;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.emptyTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.emptyText {
+  color: var(--text-light);
+  font-size: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
