@@ -5,7 +5,7 @@ import styles from "./Card.module.css";
 interface CardProps {
   icon: React.ReactNode;
   title: string;
-  description: string;
+  description: React.ReactNode;
   onClick?: () => void;
 }
 

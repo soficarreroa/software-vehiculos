@@ -1,0 +1,181 @@
+.container {
+  padding: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 28px;
+}
+
+.titulo {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.subtitulo {
+  color: #6b7280;
+  margin-bottom: 18px;
+  font-size: 15px;
+}
+
+/* FILTROS */
+
+.filterBar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.filterBtn {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: #4b5563;
+  font-size: 14px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.filterBtn:hover {
+  background-color: #e5e7eb;
+}
+
+.activeFilter {
+  background-color: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 20px;
+}
+
+/* LISTA */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* TARJETA REPORTE */
+
+.reporteCard {
+  display: flex;
+  gap: 18px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 18px 20px;
+  border-radius: 12px;
+  align-items: flex-start;
+}
+
+/* FECHA */
+
+.fechaContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 55px;
+  color: #374151;
+  font-weight: 600;
+  height: 100%;
+  margin-top: 4px;
+}
+
+.dia {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #6b7280; /* Mismo color que el subtítulo */
+}
+
+.mes {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+/* CONTENIDO */
+
+.contenidoContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* FILA SUPERIOR CON TÍTULO Y BADGE */
+.tituloRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.tituloReporte {
+  font-weight: 600;
+  font-size: 16px;
+  color: #111827;
+}
+
+/* FILA DE DETALLES (PLACA Y VALOR) */
+.detallesRow {
+  display: flex;
+  gap: 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.detalleItem {
+  display: flex;
+  align-items: center;
+}
+
+.detalleItem span {
+  margin-right: 4px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+
+
+/* BOTON PDF - Estilo personalizado */
+.pdfBtn {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #6b7280; /* Mismo color que la fecha */
+  transition: all 0.2s ease;
+  min-width: 70px;
+  text-align: center;
+  font-family: inherit;
+}
+
+.pdfBtn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.pdfBtn:active {
+  background: #e5e7eb;
+  transform: scale(0.98);
+}
+
+/* Contenedor del botón PDF */
+.pdfButtonContainer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 80px;
+}
