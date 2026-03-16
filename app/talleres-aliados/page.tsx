@@ -3,17 +3,8 @@
 import { useState } from "react";
 import WorkshopCard from "../components/pages/TalleresAliadosPage/WorkshopCard";
 import SearchBar from "../components/pages/TalleresAliadosPage/SearchBar";
+import { Workshop } from "../types/workshop";
 import styles from "../components/pages/TalleresAliadosPage/talleresaliados.module.css";
-
-interface Workshop {
-  name: string;
-  category: string;
-  location: string;
-  distance: string;
-  rating: number;
-  reviews: number;
-  icon?: string;
-}
 
 const workshops: Workshop[] = [
   {

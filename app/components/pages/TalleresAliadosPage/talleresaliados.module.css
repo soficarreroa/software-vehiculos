@@ -1,14 +1,3 @@
-:root {
-  --bg-color: #fcfcfd;
-  --sidebar-color: #1e293b;
-  --primary-accent: #3b82f6;
-  --text-main: #334155;
-  --text-light: #64748b;
-  --card-bg: #ffffff;
-  --border-color: #e2e8f0;
-  --success-color: #10b981;
-}
-
 .main {
   flex: 1;
   padding: 40px;
@@ -23,7 +12,7 @@
 .title {
   font-size: 1.8rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -68,7 +57,7 @@
 
 .workshopImage {
   height: 140px;
-  background: #e2e8f0;
+  background: var(--workshop-image-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,8 +69,8 @@
 }
 
 .workshopBadge {
-  background: #eff6ff;
-  color: var(--primary-accent);
+  background: var(--workshop-badge-bg);
+  color: var(--primary-color);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -93,7 +82,7 @@
   font-size: 1.2rem;
   font-weight: 600;
   margin: 10px 0 5px 0;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .workshopInfo {
@@ -106,7 +95,7 @@
 }
 
 .workshopFooter {
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--workshop-footer-border);
   padding-top: 15px;
   display: flex;
   justify-content: space-between;
@@ -114,7 +103,7 @@
 }
 
 .rating {
-  color: #f59e0b;
+  color: var(--workshop-rating);
   font-weight: bold;
 }
 
@@ -153,7 +142,7 @@
 .emptyTitle {
   font-size: 1.4rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0 0 10px 0;
 }
 

@@ -2,21 +2,21 @@
 
 import Input from "../../ui/Input/Input";
 import Select from "../../ui/Select/Select";
+import { BRAND_OPTIONS } from "../../../../lib/constants/brand.constants";
+import { BrandOption } from "../../../types/brandOption";
 import styles from "./talleresaliados.module.css";
 
 interface SearchBarProps {
   onSearch: (value: string) => void;
   onFilterChange: (value: string) => void;
+  options?: BrandOption[];
 }
 
-const brandOptions = [
-  { value: "", label: "Marcas" },
-];
-
-export default function SearchBar({
+const SearchBar = ({
   onSearch,
   onFilterChange,
-}: SearchBarProps) {
+  options = BRAND_OPTIONS,
+}: SearchBarProps) => {
   return (
     <div className={styles.searchContainer}>
       <Input
@@ -26,10 +26,12 @@ export default function SearchBar({
       />
       <Select
         className={styles.filterSelect}
-        options={brandOptions}
+        options={options}
         value=""
         onChange={onFilterChange}
       />
     </div>
   );
-}
+};
+
+export default SearchBar;
