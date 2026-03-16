@@ -1,18 +1,16 @@
 .main {
-  padding: 2rem;
-  max-width: 900px;
+  padding: 2rem 3rem;
+  max-width: 860px;
   margin: 0 auto;
 }
 
-.headerMain {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
 }
 
 .title {
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -20,18 +18,18 @@
 
 .subtitle {
   color: #64748b;
-  margin-top: 4px;
-  font-size: 0.9rem;
+  margin-top: 8px;
+  font-size: 0.95rem;
 }
 
 .searchWrapper {
   position: relative;
-  margin: 1.25rem 0 1rem 0;
+  margin-bottom: 1.5rem;
 }
 
 .searchInput {
   width: 100%;
-  padding: 11px 16px 11px 42px;
+  padding: 11px 16px 11px 16px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   font-size: 0.9rem;
@@ -39,53 +37,13 @@
   outline: none;
   box-sizing: border-box;
   color: #334155;
+  background: #f8fafc;
 }
 
 .searchInput:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.searchIcon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1rem;
-}
-
-.filterBtn {
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
   background: white;
-  cursor: pointer;
-  font-size: 0.78rem;
-  color: #64748b;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-
-.filterBtn:hover {
-  background: #f1f5f9;
-}
-
-.filterBtnActive {
-  background: #1e293b;
-  color: white;
-  border-color: #1e293b;
-}
-
-.counter {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  margin-bottom: 1.2rem;
 }
 
 .grid {
@@ -95,35 +53,39 @@
 
 .lawCard {
   border-radius: 12px;
-  overflow: hidden;
   border: 1px solid #e2e8f0;
   background: white;
+  padding: 24px;
   transition: box-shadow 0.2s;
 }
 
-.lawCardRead {
-  border-left: 4px solid #16a34a;
+.lawCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-.lawCardOpen {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-}
-
-.cardButtons {
+.cardHeader {
   display: flex;
-  gap: 8px;
-  padding: 0 16px 16px 16px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.cardBody {
-  padding: 16px;
-  border-top: 1px solid #f1f5f9;
+.cardIcon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #0f172a;
+  margin: 0;
 }
 
 .detail {
-  font-size: 0.87rem;
-  color: #475569;
-  line-height: 1.7;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -131,31 +93,11 @@
   background: #fffbeb;
   border: 1px solid #fef3c7;
   border-radius: 8px;
-  padding: 11px 14px;
+  padding: 10px 14px;
   margin-top: 12px;
   color: #92400e;
   font-size: 0.82rem;
   font-weight: 500;
-}
-
-.cardFooter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-}
-
-.categoryTag {
-  font-size: 0.73rem;
-  background: #f1f5f9;
-  color: #475569;
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-.yearTag {
-  font-size: 0.73rem;
-  color: #94a3b8;
 }
 
 .noResults {
@@ -166,5 +108,4 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  font-size: 2rem;
 }
