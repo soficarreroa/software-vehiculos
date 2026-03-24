@@ -1,5 +1,7 @@
 "use client";
 import { useState } from 'react';
+import styles from './MisVehiculosPage.module.css';
+import Button from '@/app/components/ui/Button/Button';
 
 interface VehicleFormProps {
   onAdd: (name: string, model: string, color: string, plate: string) => void;
@@ -9,8 +11,6 @@ interface VehicleFormProps {
 }
 
 export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: VehicleFormProps) => {
-  // Los estados se inicializan directamente aquí. 
-  // Al cambiar la 'key' en el padre, este componente nace de nuevo con estos valores.
   const [name, setName] = useState(initialData?.name || '');
   const [model, setModel] = useState(initialData?.model || '');
   const [color, setColor] = useState(initialData?.color || '');
@@ -26,14 +26,9 @@ export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: Vehicle
       return;
     }
 
-    if (model.length < 4) {
-      setError('El modelo debe ser un año válido de 4 dígitos (Ej: 2024).');
-      return;
-    }
-
     const anioIngresado = parseInt(model);
     const anioActual = new Date().getFullYear();
-    if (anioIngresado > anioActual + 1 || anioIngresado < 1900) {
+    if (model.length < 4 || anioIngresado > anioActual + 1 || anioIngresado < 1900) {
       setError('Por favor, ingresa un año de modelo válido.');
       return;
     }
@@ -43,70 +38,61 @@ export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: Vehicle
       return;
     }
 
-    // Aquí llamamos a onAdd, que en page.tsx se encargará de decidir si guarda uno nuevo o actualiza
     onAdd(name, model, color, plate);
     
-    // Solo limpiamos si NO estamos editando (opcional)
     if (!isEditing) {
       setName(''); setModel(''); setColor(''); setPlate('');
     }
   };
 
   return (
-    <div className="form-container" style={{ 
-      background: 'white', 
-      padding: '20px', 
-      borderRadius: '12px', 
-      marginBottom: '30px', 
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      border: isEditing ? '2px solid #3b82f6' : '1px solid #e2e8f0' // Color azul si editamos
-    }}>
-      <h3 style={{ marginTop: 0 }}>
+    <div className={`${styles.formContainer} ${isEditing ? styles.editingBorder : ''}`}>
+      <h3 className={styles.formTitle}>
         {isEditing ? 'Editar Vehículo' : 'Registrar Nuevo Vehículo'}
       </h3>
 
       {error && (
-        <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '10px', fontWeight: 'bold' }}>
+        <p className={styles.errorMessage}>
           ⚠️ {error}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+      <form onSubmit={handleSubmit} className={styles.formElement}>
+        <div className={styles.inputGroup}>
           <input 
-            className="form-input"
+            className={styles.formInput}
             placeholder="Nombre (Ej: Toyota Hilux)" 
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input 
-            className="form-input"
+            className={styles.formInput}
             type="number"
             placeholder="Modelo (Año)" 
             value={model}
             onChange={(e) => setModel(e.target.value)}
           />
           <input 
-            className="form-input"
+            className={styles.formInput}
             placeholder="Color" 
             value={color}
             onChange={(e) => setColor(e.target.value)}
           />
           <input 
-            className="form-input"
+            className={styles.formInput}
             placeholder="Placa (ABC-123)" 
             value={plate}
             onChange={(e) => setPlate(e.target.value.toUpperCase())}
           />
         </div>
         
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button type="submit" className="btn-add">
+        <div className={styles.formActions}>
+          <Button color="green">
             {isEditing ? 'Guardar Cambios' : 'Guardar Vehículo'}
-          </button>
-          <button type="button" onClick={onCancel} className="btn-outline" style={{ color: '#ef4444' }}>
+          </Button>
+          <Button onClick={onCancel} color="red">
             Cancelar
-          </button>
+          </Button>
         </div>
       </form>
     </div>
