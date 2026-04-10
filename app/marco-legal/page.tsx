@@ -1,9 +1,5 @@
+﻿import MarcoLegal from "../components/pages/MarcoLegal/MarcoLegal";
 const Page = () => {
-  return (
-    <div>
-      <h1>Marco Legal</h1>
-    </div>
-  );
+  return <MarcoLegal />;
 };
-
 export default Page;
