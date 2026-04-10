@@ -1,7 +1,7 @@
-import Card from "../ui/Card/Card";
-import Info from "../ui/Info/Info";
-import Button from "../ui/Button/Button";
-import Pill from "../ui/Pill/Pill";
+import Card from "../../ui/Card/Card";
+import Info from "../../ui/Info/Info";
+import Button from "../../ui/Button/Button";
+import Pill from "../../ui/Pill/Pill";
 import styles from "./controlPanelpage.module.css";
 import { controlPanelPageOptions } from "@/lib/constants/controlPanel.constants";
 
@@ -11,7 +11,9 @@ const ControlPanelPage = () => {
       <div className={styles.headerMain}>
         <div>
           <h1 className={styles.title}>Panel de Control</h1>
-          <p className={styles.subtitle}>Gestión integral de daños materiales</p>
+          <p className={styles.subtitle}>
+            Gestión integral de daños materiales
+          </p>
         </div>
         <div style={{ textAlign: "right" }}>
           <Pill>SOAT Vigente</Pill>
