@@ -1,8 +1,9 @@
+// app/mis-vehiculos/page.tsx
+import MyVehiclesPage from '../components/pages/MisVehiculosPage/MisVehiculosPage';
+
 const Page = () => {
   return (
-    <div>
-      <h1>Mis Vehículos</h1>
-    </div>
+    <MyVehiclesPage />
   );
 };
 
