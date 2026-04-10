@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -100,3 +101,6 @@ const HistoryPage = (): React.ReactElement => {
 };
 
 export default HistoryPage;
+=======
+// HistoryPage styles
+>>>>>>> 70e3759477da2af7629f6fccb1707f80b10de3d7

@@ -52,4 +52,13 @@
   --danger-soft: #fef2f2;
   --danger-text: #991b1b;
   --danger-border: #fee2e2;
+
+  /* Workshops */
+  --workshop-image-bg: #e2e8f0;
+  --workshop-badge-bg: #eff6ff;
+  --workshop-rating: #f59e0b;
+  --workshop-footer-border: #f1f5f9;
+
+  /* Border */
+  --border-color: #e2e8f0;
 }

@@ -7,6 +7,7 @@ import styles from "./Sidebar.module.css";
 const menuItems = [
   { label: "Inicio", href: "/" },
   { label: "Mis Vehículos", href: "/mis-vehiculos" },
+  { label: "Cotización", href: "/cotizacion" },
   { label: "Historial", href: "/historial" },
   { label: "Talleres Aliados", href: "/talleres-aliados" },
   { label: "Marco Legal", href: "/marco-legal" },
