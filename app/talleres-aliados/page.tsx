@@ -18,7 +18,7 @@ export default function Page() {
     direccion: "",
     telefono: "",
     email: "",
-    category: "Mecánica general",
+    categoria: "Mecánica general",
     marcas_soportadas: "",
     certificado: false,
   });
@@ -74,7 +74,7 @@ export default function Page() {
         direccion: "",
         telefono: "",
         email: "",
-        category: "Mecánica general",
+        categoria: "Mecánica general",
         marcas_soportadas: "",
         certificado: false,
       });
@@ -110,7 +110,7 @@ export default function Page() {
             <WorkshopCard
               key={workshop.id}
               nombre={workshop.nombre}
-              category={workshop.category}
+              category={workshop.categoria}
               direccion={workshop.direccion}
               rating={workshop.rating}
               reviews={workshop.reviews}
@@ -168,8 +168,8 @@ export default function Page() {
                 <label className={styles.formLabel}>Categoría</label>
                 <select
                   className={styles.formSelect}
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  value={formData.categoria}
+                  onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
                 >
                   <option value="Mecánica general">Mecánica general</option>
                   <option value="Frenos">Frenos</option>
