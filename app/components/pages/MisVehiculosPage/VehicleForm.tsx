@@ -4,44 +4,43 @@ import styles from './MisVehiculosPage.module.css';
 import Button from '@/app/components/ui/Button/Button';
 
 interface VehicleFormProps {
-  onAdd: (name: string, model: string, color: string, plate: string) => void;
+  onAdd: (marca: string, modelo: string, color: string, placa: string) => void;
   onCancel: () => void;
-  initialData?: { name: string; model: string; color: string; plate: string };
+  initialData?: { marca: string; modelo: string; color: string; placa: string };
   isEditing?: boolean;
 }
 
 export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: VehicleFormProps) => {
-  const [name, setName] = useState(initialData?.name || '');
-  const [model, setModel] = useState(initialData?.model || '');
+  const [marca, setMarca] = useState(initialData?.marca || '');
+  const [modelo, setModelo] = useState(initialData?.modelo || '');
   const [color, setColor] = useState(initialData?.color || '');
-  const [plate, setPlate] = useState(initialData?.plate || '');
+  const [placa, setPlaca] = useState(initialData?.placa || '');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!name || !model || !color || !plate) {
+    if (!marca || !modelo || !color || !placa) {
       setError('Por favor, completa todos los campos.');
       return;
     }
 
-    const anioIngresado = parseInt(model);
-    const anioActual = new Date().getFullYear();
-    if (model.length < 4 || anioIngresado > anioActual + 1 || anioIngresado < 1900) {
-      setError('Por favor, ingresa un año de modelo válido.');
+    // Validar modelo como string (puede ser año o descripción)
+    if (!modelo.trim()) {
+      setError('Por favor, ingresa un modelo válido.');
       return;
     }
 
-    if (plate.length < 6) {
+    if (placa.length < 6) {
       setError('La placa debe tener al menos 6 caracteres.');
       return;
     }
 
-    onAdd(name, model, color, plate);
-    
+    onAdd(marca, modelo, color, placa);
+
     if (!isEditing) {
-      setName(''); setModel(''); setColor(''); setPlate('');
+      setMarca(''); setModelo(''); setColor(''); setPlaca('');
     }
   };
 
@@ -61,16 +60,15 @@ export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: Vehicle
         <div className={styles.inputGroup}>
           <input 
             className={styles.formInput}
-            placeholder="Nombre (Ej: Toyota Hilux)" 
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="Marca (Ej: Toyota)" 
+            value={marca}
+            onChange={(e) => setMarca(e.target.value)}
           />
           <input 
             className={styles.formInput}
-            type="number"
-            placeholder="Modelo (Año)" 
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
+            placeholder="Modelo (Ej: Hilux 2020)" 
+            value={modelo}
+            onChange={(e) => setModelo(e.target.value)}
           />
           <input 
             className={styles.formInput}
@@ -81,8 +79,8 @@ export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: Vehicle
           <input 
             className={styles.formInput}
             placeholder="Placa (ABC-123)" 
-            value={plate}
-            onChange={(e) => setPlate(e.target.value.toUpperCase())}
+            value={placa}
+            onChange={(e) => setPlaca(e.target.value.toUpperCase())}
           />
         </div>
         

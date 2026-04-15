@@ -78,3 +78,57 @@
     grid-template-columns: 1fr;
   }
 }
+
+.itemCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: #f8fafc;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.btnDelete {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.tagSection {
+  margin-bottom: 10px;
+}
+
+.smallLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+
+.tagsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tagButton {
+  padding: 5px 10px;
+  border-radius: 15px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tagActive {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+}
