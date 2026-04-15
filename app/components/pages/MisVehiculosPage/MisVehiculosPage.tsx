@@ -22,7 +22,7 @@ export default function MyVehiclesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
-  const API_BASE_URL = 'http://localhost:8000/api/v1/vehiculos';
+  const API_BASE_URL = 'https://software-vehiculos-api.onrender.com/api/v1/vehiculos';
 
   // Función para cargar vehículos desde la API
   const fetchVehiculos = async () => {
