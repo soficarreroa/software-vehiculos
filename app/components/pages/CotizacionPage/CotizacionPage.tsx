@@ -50,7 +50,7 @@ export default function CotizacionPage() {
   const [items, setItems] = useState<ItemSeleccionado[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8000/api/v1";
+  const API_BASE_URL = "https://software-vehiculos-api.onrender.com/api/v1";
 
   // 1. Cargar vehículos
   useEffect(() => {
