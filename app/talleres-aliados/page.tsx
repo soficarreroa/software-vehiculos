@@ -39,18 +39,18 @@ export default function Page() {
   }, []);
 
   const filteredWorkshops = workshops.filter((workshop) => {
-  if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
-  
-  const matchesSearch =
-    workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
-    workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
-  
-  const matchesFilter =
-    filterValue === "all" ||
-    workshop.categoria.toLowerCase().includes(filterValue);
-  
-  return matchesSearch && matchesFilter;
-});
+    if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
+    
+    const matchesSearch =
+      workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
+      workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
+    
+    const matchesFilter =
+      filterValue === "all" ||
+      workshop.categoria.toLowerCase().includes(filterValue);
+    
+    return matchesSearch && matchesFilter;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
