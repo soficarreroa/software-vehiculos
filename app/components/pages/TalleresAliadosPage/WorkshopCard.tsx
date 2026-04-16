@@ -2,7 +2,10 @@
 
 import Button from "../../ui/Button/Button";
 import {
+<<<<<<< HEAD
+=======
   DEFAULT_WORKSHOP_ICON,
+>>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
   LOCATION_PREFIX,
   REVIEWS_SUFFIX,
   CONTACT_BUTTON_TEXT,
@@ -11,6 +14,31 @@ import {
 import styles from "./talleresaliados.module.css";
 
 interface WorkshopCardProps {
+<<<<<<< HEAD
+  nombre: string;
+  category: string;
+  direccion: string;
+  rating: number;
+  reviews: number;
+}
+
+const WorkshopCard = ({
+  nombre,
+  category,
+  direccion,
+  rating,
+  reviews,
+}: WorkshopCardProps) => {
+  const iconMap: Record<string, string> = {
+    "Mecánica general": "🔧",
+    "Frenos": "⚙️",
+    "Electricidad": "⚡",
+    "Carrocería": "🚗",
+    "Llantas": "🛞",
+  }
+  const icon = iconMap[category] ?? "🏪"
+
+=======
   name: string;
   category: string;
   location: string;
@@ -29,14 +57,21 @@ const WorkshopCard = ({
   reviews,
   icon = DEFAULT_WORKSHOP_ICON,
 }: WorkshopCardProps) => {
+>>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
   return (
     <div className={styles.workshopCard}>
       <div className={styles.workshopImage}>{icon}</div>
       <div className={styles.workshopBody}>
         <span className={styles.workshopBadge}>{category}</span>
+<<<<<<< HEAD
+        <h3 className={styles.workshopName}>{nombre}</h3>
+        <div className={styles.workshopInfo}>
+          {LOCATION_PREFIX} {direccion}
+=======
         <h3 className={styles.workshopName}>{name}</h3>
         <div className={styles.workshopInfo}>
           {LOCATION_PREFIX} {location} • {distance}
+>>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
         </div>
         <div className={styles.workshopFooter}>
           <span className={styles.rating}>
