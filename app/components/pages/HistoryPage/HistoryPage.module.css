@@ -1,0 +1,103 @@
+.container {
+  padding: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--text-light); 
+  font-size: 0.95rem;
+}
+
+.filterBar {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.filterBtn {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-primary);
+  color: var(--text-light);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterBtn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.activeFilter {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid  var(--primary-color);
+  background: var(--primary-bg);
+  color: var(--primary-color);
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 48px;
+  color: var(--sidebar-text);
+}
+
+.dateContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+}
+
+.day {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.month {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+.detailsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.detailItem {
+  font-size: 0.875rem;
+  color: var(--text-light);
+}
+
+.detailItem span {
+  font-weight: 600;
+  color: var(--text-main);
+}

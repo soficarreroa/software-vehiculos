@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client";
 
 const Page = () => {
@@ -7,6 +8,10 @@ const Page = () => {
       <p className="text-gray-500 mt-2">Información sobre normativa y regulaciones.</p>
     </div>
   );
+=======
+﻿import MarcoLegal from "../components/pages/MarcoLegal/MarcoLegal";
+const Page = () => {
+  return <MarcoLegal />;
+>>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
 };
-
 export default Page;
