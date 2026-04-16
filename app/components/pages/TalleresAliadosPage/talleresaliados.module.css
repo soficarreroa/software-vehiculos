@@ -152,7 +152,6 @@
   max-width: 400px;
   margin: 0 auto;
 }
-<<<<<<< HEAD
 
 .headerActions {
   display: flex;
@@ -313,5 +312,3 @@
   background: var(--hover-bg, #f5f5f5);
   color: var(--text-primary);
 }
-=======
->>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f

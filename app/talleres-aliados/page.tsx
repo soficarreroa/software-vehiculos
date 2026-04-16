@@ -1,16 +1,11 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
-=======
-import { useState } from "react";
->>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
 import WorkshopCard from "../components/pages/TalleresAliadosPage/WorkshopCard";
 import SearchBar from "../components/pages/TalleresAliadosPage/SearchBar";
 import { Workshop } from "../types/workshop";
 import styles from "../components/pages/TalleresAliadosPage/talleresaliados.module.css";
 
-<<<<<<< HEAD
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,53 +84,6 @@ export default function Page() {
       setSubmitting(false);
     }
   };
-=======
-const workshops: Workshop[] = [
-  {
-    name: "Nombre del Taller",
-    category: "Categoría del servicio",
-    location: "Dirección / Ciudad",
-    distance: "Distancia",
-    rating: 0,
-    reviews: 0,
-    icon: "🏢",
-  },
-  {
-    name: "Nombre del Taller",
-    category: "Categoría del servicio",
-    location: "Dirección / Ciudad",
-    distance: "Distancia",
-    rating: 0,
-    reviews: 0,
-    icon: "🛠️",
-  },
-  {
-    name: "Nombre del Taller",
-    category: "Categoría del servicio",
-    location: "Dirección / Ciudad",
-    distance: "Distancia",
-    rating: 0,
-    reviews: 0,
-    icon: "🏪",
-  },
-];
-
-export default function Page() {
-  const [searchValue, setSearchValue] = useState("");
-  const [filterValue, setFilterValue] = useState("all");
-
-  const filteredWorkshops = workshops.filter((workshop) => {
-    const matchesSearch =
-      workshop.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      workshop.location.toLowerCase().includes(searchValue.toLowerCase());
-    
-    const matchesFilter = 
-      filterValue === "all" || 
-      workshop.category.toLowerCase().includes(filterValue);
-    
-    return matchesSearch && matchesFilter;
-  });
->>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
 
   return (
     <main className={styles.main}>
@@ -146,7 +94,6 @@ export default function Page() {
         </p>
       </div>
 
-<<<<<<< HEAD
       <div className={styles.headerActions}>
         <button className={styles.addButton} onClick={() => setShowForm(true)}>
           + Agregar Taller
@@ -276,24 +223,6 @@ export default function Page() {
           </div>
         </div>
       )}
-=======
-      <SearchBar onSearch={setSearchValue} onFilterChange={setFilterValue} />
-
-      <div className={styles.gridWorkshops}>
-        {filteredWorkshops.map((workshop, index) => (
-          <WorkshopCard
-            key={index}
-            name={workshop.name}
-            category={workshop.category}
-            location={workshop.location}
-            distance={workshop.distance}
-            rating={workshop.rating}
-            reviews={workshop.reviews}
-            icon={workshop.icon}
-          />
-        ))}
-      </div>
->>>>>>> 198803deff964e2896bca7b0e90109c89e8c005f
     </main>
   );
 }
