@@ -4,26 +4,25 @@ import Button from '@/app/components/ui/Button/Button';
 import Pill from '@/app/components/ui/Pill/Pill';
 
 interface VehicleCardProps {
-  name: string;
-  model: string;
+  marca: string;
+  modelo: string;
   color: string;
-  plate: string;
-  icon: string;
+  placa: string;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export const VehicleCard = ({ name, model, color, plate, icon, onEdit, onDelete }: VehicleCardProps) => {
+export const VehicleCard = ({ marca, modelo, color, placa, onEdit, onDelete }: VehicleCardProps) => {
   return (
     <div className={styles.vehicleCard}>
-      <div className={styles.vehicleIcon}>{icon}</div>
+      <div className={styles.vehicleIcon}>🚗</div>
       
       <div className={styles.vehicleInfo}>
-        <h3>{name}</h3>
-        <p>Modelo {model} • {color}</p>
+        <h3>{marca}</h3>
+        <p>Modelo {modelo} • {color}</p>
         <div className={styles.plateContainer}>
           {/* Usamos el componente Pill para la placa */}
-          <Pill>{plate}</Pill>
+          <Pill>{placa}</Pill>
         </div>
       </div>
 
