@@ -59,13 +59,14 @@ const HistoryPage = (): React.ReactElement => {
   }, []);
 
   const handleDescargarPDF = async (cotizacionId: number) => {
-    try {
-      await historyService.downloadReportPdf(cotizacionId, "2");
-    } catch (error) {
-      console.error(ERROR_MESSAGES.DOWNLOAD_ERROR, error);
-      setError(ERROR_MESSAGES.DOWNLOAD_ERROR);
-    }
-  };
+  try {
+    console.log('Descargando reporte ID:', cotizacionId);
+    await historyService.downloadReportPdf(cotizacionId, "1");
+  } catch (error) {
+    console.error('Error en handleDescargarPDF:', error);
+    alert('Error al descargar el reporte');
+  }
+};
 
   const vehicleFilterOptions: string[] = useMemo(() => {
     const uniqueVehicles = Array.from(new Set(reports.map((report) => report.vehicle)));

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Conexión directa a Supabase (valores fijos)
+// Cliente de Supabase (se recomienda mover a un archivo centralizado)
 const supabase = createClient(
   'https://umpkwpurnujoebzjglzs.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtcGt3cHVybnVqb2ViempnbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ5NTMsImV4cCI6MjA5MTIzMDk1M30.vhHL0H8C1-UfLFMs1NBJDXUmHllZl-DqJ_0sUCrC47U'
@@ -16,103 +16,181 @@ export interface HistoryEntry {
   estado: string;
 }
 
+// URL del backend – asegúrate que coincida con tu entorno
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export const historyService = {
   async getHistorial(userId: string): Promise<HistoryEntry[]> {
     try {
-      console.log(' Buscando cotizaciones...');
+      console.log('Buscando cotizaciones para usuario:', userId);
       
-      // Obtener todas las cotizaciones
-      const { data: cotizaciones, error } = await supabase
+      const { data: cotizaciones, error: cotizacionesError } = await supabase
         .from('cotizaciones')
-        .select('*')
+        .select('id, creado_en, observaciones, estado, vehiculo_id, monto_total')
         .eq('usuario_id', parseInt(userId))
         .order('creado_en', { ascending: false });
       
-      if (error) {
-        console.error('❌ Error:', error);
-        throw new Error(error.message);
+      if (cotizacionesError) {
+        console.error('Error al obtener cotizaciones:', cotizacionesError);
+        throw new Error(cotizacionesError.message);
       }
       
       if (!cotizaciones || cotizaciones.length === 0) {
-        console.log('📭 No hay cotizaciones');
+        console.log('No hay cotizaciones');
         return [];
       }
       
-      console.log(`✅ Encontradas ${cotizaciones.length} cotizaciones`);
+      console.log('Encontradas', cotizaciones.length, 'cotizaciones');
       
-      // Mapear directamente los datos
-      const history: HistoryEntry[] = cotizaciones.map(item => ({
-        id: item.id,
-        fecha: item.creado_en,
-        descripcion_siniestro: item.observaciones || 'Sin descripción',
-        vehiculo_nombre: `Vehículo ID: ${item.vehiculo_id || 'N/A'}`,
-        placa: 'Por consultar',
-        valor_total: parseFloat(item.monito_total) || 0,
-        estado: item.estado === 'reparado' ? 'Reparado' : 'En espera'
-      }));
+      const vehiculoIds = [...new Set(cotizaciones.map(c => c.vehiculo_id).filter(id => id))];
       
+      let vehiculosMap = new Map();
+      if (vehiculoIds.length > 0) {
+        const { data: vehiculos, error: vehiculosError } = await supabase
+          .from('vehiculos')
+          .select('id, marca, modelo, placa')
+          .in('id', vehiculoIds);
+        
+        if (vehiculosError) {
+          console.error('Error al obtener vehiculos:', vehiculosError);
+        } else if (vehiculos) {
+          vehiculos.forEach(v => {
+            vehiculosMap.set(v.id, v);
+          });
+          console.log('Encontrados', vehiculos.length, 'vehiculos');
+        }
+      }
+      
+      // Cálculo de totales por si acaso, pero el backend ya lo provee
+      const cotizacionIds = cotizaciones.map(c => c.id);
+      let itemsMap = new Map();
+      
+      if (cotizacionIds.length > 0) {
+        const { data: items, error: itemsError } = await supabase
+          .from('items_cotizacion')
+          .select('cotizacion_id, precio_unit_repuesto, precio_unit_mano_obra, precio_unit_pintura')
+          .in('cotizacion_id', cotizacionIds);
+        
+        if (itemsError) {
+          console.error('Error al obtener items:', itemsError);
+        } else if (items) {
+          items.forEach(item => {
+            const currentTotal = itemsMap.get(item.cotizacion_id) || 0;
+            const repuesto = Number(item.precio_unit_repuesto) || 0;
+            const manoObra = Number(item.precio_unit_mano_obra) || 0;
+            const pintura = Number(item.precio_unit_pintura) || 0;
+            itemsMap.set(item.cotizacion_id, currentTotal + repuesto + manoObra + pintura);
+          });
+          console.log('Calculados totales para', itemsMap.size, 'cotizaciones');
+        }
+      }
+      
+      const history: HistoryEntry[] = cotizaciones.map(item => {
+        const vehiculo = vehiculosMap.get(item.vehiculo_id);
+        
+        let vehiculoNombre = 'Vehiculo no especificado';
+        let placaVehiculo = 'Por consultar';
+        
+        if (vehiculo) {
+          const marca = vehiculo.marca || '';
+          const modelo = vehiculo.modelo || '';
+          vehiculoNombre = `${marca} ${modelo}`.trim();
+          if (!vehiculoNombre) {
+            vehiculoNombre = 'Vehiculo sin marca/modelo';
+          }
+          placaVehiculo = vehiculo.placa || 'Por consultar';
+        }
+        
+        let montoTotal = itemsMap.get(item.id) || 0;
+        if (montoTotal === 0 && item.monto_total) {
+          montoTotal = Number(item.monto_total);
+        }
+        
+        // El estado ya viene formateado desde el backend, pero mantenemos consistencia
+        let estadoFormateado = 'En espera';
+        const estadoOriginal = (item.estado || '').toLowerCase();
+        if (estadoOriginal === 'reparado') {
+          estadoFormateado = 'Reparado';
+        } else if (estadoOriginal === 'cancelado') {
+          estadoFormateado = 'Cancelado';
+        }
+        
+        return {
+          id: item.id,
+          fecha: item.creado_en,
+          descripcion_siniestro: item.observaciones || 'Sin descripcion',
+          vehiculo_nombre: vehiculoNombre,
+          placa: placaVehiculo,
+          valor_total: montoTotal,
+          estado: estadoFormateado
+        };
+      });
+      
+      console.log('Retornando', history.length, 'registros formateados');
       return history;
       
     } catch (error) {
-      console.error(' Error:', error);
+      console.error('Error en getHistorial:', error);
       return [];
     }
   },
 
   async downloadReportPdf(cotizacionId: number, userId: string): Promise<void> {
-    try {
-      // Obtener la cotización específica
-      const { data: cotizacion, error } = await supabase
-        .from('cotizaciones')
-        .select('*')
-        .eq('id', cotizacionId)
-        .eq('usuario_id', parseInt(userId))
-        .single();
-      
-      if (error) throw error;
-      
-      // Crear un PDF simple con los datos
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Reporte ${cotizacion.id}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            h1 { color: #1e3a5f; }
-            .info { margin: 20px 0; padding: 15px; background: #f0f0f0; border-radius: 8px; }
-            .label { font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <h1>AutoPerito - Reporte de Cotización</h1>
-          <div class="info">
-            <p><span class="label">ID Cotización:</span> ${cotizacion.id}</p>
-            <p><span class="label">Fecha:</span> ${new Date(cotizacion.creado_en).toLocaleString()}</p>
-            <p><span class="label">Estado:</span> ${cotizacion.estado}</p>
-            <p><span class="label">Observaciones:</span> ${cotizacion.observaciones || 'Ninguna'}</p>
-            <p><span class="label">Valor Total:</span> $${parseFloat(cotizacion.monito_total || 0).toLocaleString()}</p>
-          </div>
-          <p style="margin-top: 50px; font-size: 12px; color: gray;">Documento generado por AutoPerito</p>
-        </body>
-        </html>
-      `;
-      
-      // Crear blob y descargar
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `reporte_${cotizacionId}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-    } catch (error) {
-      console.error(' Error generando PDF:', error);
-      alert('Error al generar el reporte');
+  try {
+    const url = `${API_URL}/api/v1/historial/${cotizacionId}/descargar-pdf?user_id=${userId}`;
+    console.log('Solicitando PDF a:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
     }
+
+    const contentType = response.headers.get('content-type');
+    console.log('Content-Type recibido:', contentType);
+    
+    if (!contentType || !contentType.includes('application/pdf')) {
+      // Podría ser que el backend devolviera un JSON de error pero con status 200
+      const text = await response.text();
+      console.error('Respuesta no es PDF, es:', text.substring(0, 500));
+      throw new Error(`El servidor no devolvió un PDF (Content-Type: ${contentType})`);
+    }
+
+    const blob = await response.blob();
+    console.log('Tamaño del blob:', blob.size, 'bytes');
+    
+    if (blob.size === 0) {
+      throw new Error('El PDF generado está vacío (0 bytes)');
+    }
+
+    // Crear link de descarga
+    const urlBlob = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = urlBlob;
+    a.download = `reporte_${cotizacionId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(urlBlob);
+    
+    console.log('Descarga iniciada correctamente');
+    
+  } catch (error) {
+    console.error('Error completo en downloadReportPdf:', error);
+    // Muestra el mensaje real al usuario
+    alert(error instanceof Error ? error.message : 'Error desconocido al descargar el PDF');
+    throw error;
   }
+}
 };
