@@ -19,7 +19,7 @@ export interface HistoryEntry {
 export const historyService = {
   async getHistorial(userId: string): Promise<HistoryEntry[]> {
     try {
-      console.log('🔍 Buscando cotizaciones...');
+      console.log(' Buscando cotizaciones...');
       
       // Obtener todas las cotizaciones
       const { data: cotizaciones, error } = await supabase

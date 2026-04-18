@@ -1,6 +1,6 @@
 .container {
   padding: 32px;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -65,61 +65,155 @@
   color: var(--sidebar-text);
 }
 
-.dateContainer {
+/* Tarjeta de reporte */
+.reportCard {
+  display: flex;
+  align-items: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  gap: 20px;
+  transition: all 0.2s;
+}
+
+.reportCard:hover {
+   transform: scale(1.02); 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Columna de fecha */
+.dateColumn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
+  min-width: 70px;
 }
 
-.day {
-  font-size: 1.2rem;
+.dayText {
+  font-size: 2 rem;
   font-weight: 700;
+  color: var(--text-main);
   line-height: 1;
 }
 
-.month {
+.monthText {
   font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color);
   text-transform: uppercase;
-  color: var(--text-light);
+  margin-top: 4px;
+}
+
+/* Columna de contenido */
+.contentColumn {
+  flex: 1;
+}
+
+.titleRow {
+  margin-bottom: 8px;
+}
+
+.reportTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
 }
 
 .detailsRow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.detailItem {
+.plate, .value {
   font-size: 0.875rem;
   color: var(--text-light);
 }
 
-.detailItem span {
-  font-weight: 600;
-  color: var(--text-main);
+.separator {
+  color: var(--text-light);
+  font-size: 0.75rem;
 }
+
+/* Columna de acciones */
+.actionsColumn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 140px;
+  justify-content: flex-end;
+}
+
+.pdfButton {
+  padding: 6px 16px;
+  background-color: transparent;
+  color: var(--text-light);  /* ← Texto gris */
+  border: 1px solid var(--card-border);  /* ← Borde gris como la card */
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.pdfButton:hover {
+  background-color: var(--card-border);  /* ← Fondo gris claro al hover */
+  color: var(--text-main);  /* ← Texto más oscuro al hover */
+}
+
 
 /* Responsive */
 @media (max-width: 768px) {
   .container {
     padding: 16px;
   }
-  
+
+  .reportCard {
+     display: flex;
+  align-items: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  gap: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .dateColumn {
+    flex-direction: row;
+    gap: 8px;
+    min-width: auto;
+  }
+
+  .dayText {
+    font-size: 1.5rem;
+  }
+
+  .monthText {
+    margin-top: 0;
+  }
+
+  .actionsColumn {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .pdfButton {
+    flex: 1;
+    text-align: center;
+  }
+
   .detailsRow {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .filterBar {
     gap: 4px;
   }
-  
-  .filterBtn, .activeFilter {
-    padding: 4px 12px;
-    font-size: 0.75rem;
+
+  .separator {
+    display: none;
   }
 }
