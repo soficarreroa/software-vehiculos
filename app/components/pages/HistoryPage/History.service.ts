@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Cliente de Supabase (se recomienda mover a un archivo centralizado)
 const supabase = createClient(
   'https://umpkwpurnujoebzjglzs.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtcGt3cHVybnVqb2ViempnbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ5NTMsImV4cCI6MjA5MTIzMDk1M30.vhHL0H8C1-UfLFMs1NBJDXUmHllZl-DqJ_0sUCrC47U'
@@ -16,7 +15,6 @@ export interface HistoryEntry {
   estado: string;
 }
 
-// URL del backend – asegúrate que coincida con tu entorno
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export const historyService = {
@@ -142,55 +140,53 @@ export const historyService = {
     
     const response = await fetch(url, {
       method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
       headers: {
         'Accept': 'application/pdf',
       },
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    console.log(' Respuesta status:', response.status);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      if (!response.ok) {
+        let errorMsg = `Error ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.detail || errorMsg;
+        } catch {
+          const text = await response.text();
+          errorMsg = text.substring(0, 200);
+        }
+        throw new Error(errorMsg);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        const text = await response.text();
+        console.error(' Respuesta no es PDF:', text.substring(0, 500));
+        throw new Error('El servidor no devolvió un archivo PDF válido');
+      }
+
+      const blob = await response.blob();
+      if (blob.size === 0) {
+        throw new Error('El PDF generado está vacío');
+      }
+
+      // Crear link de descarga
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `reporte_${cotizacionId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      console.log(' Descarga exitosa');
+      
+    } catch (error) {
+      console.error(' Error en downloadReportPdf:', error);
+      // Lanza el error para que el componente lo maneje
+      throw error;
     }
-
-    const contentType = response.headers.get('content-type');
-    console.log('Content-Type recibido:', contentType);
-    
-    if (!contentType || !contentType.includes('application/pdf')) {
-      // Podría ser que el backend devolviera un JSON de error pero con status 200
-      const text = await response.text();
-      console.error('Respuesta no es PDF, es:', text.substring(0, 500));
-      throw new Error(`El servidor no devolvió un PDF (Content-Type: ${contentType})`);
-    }
-
-    const blob = await response.blob();
-    console.log('Tamaño del blob:', blob.size, 'bytes');
-    
-    if (blob.size === 0) {
-      throw new Error('El PDF generado está vacío (0 bytes)');
-    }
-
-    // Crear link de descarga
-    const urlBlob = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = urlBlob;
-    a.download = `reporte_${cotizacionId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(urlBlob);
-    
-    console.log('Descarga iniciada correctamente');
-    
-  } catch (error) {
-    console.error('Error completo en downloadReportPdf:', error);
-    // Muestra el mensaje real al usuario
-    alert(error instanceof Error ? error.message : 'Error desconocido al descargar el PDF');
-    throw error;
   }
-}
 };

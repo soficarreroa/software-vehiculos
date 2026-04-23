@@ -1,7 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from 'react';
 import styles from './HistoryPage.module.css';
-import Card from '../../ui/Card/Card';
 import Pill from '../../ui/Pill/Pill';
 import { FILTER_DEFAULT, REPORT_STATUS, STATUS_PILL_COLOR, ReportStatus, ERROR_MESSAGES } from './History.constants';
 import { historyService } from './History.service';
@@ -21,13 +20,17 @@ const HistoryPage = (): React.ReactElement => {
   const [filter, setFilter] = useState<string>(FILTER_DEFAULT);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  // ⚠️ IMPORTANTE: Reemplazar con el ID real del usuario logueado (desde contexto, localStorage, etc.)
+  const userId = "1";
 
   useEffect(() => {
     const fetchHistorial = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await historyService.getHistorial("1");
+        const data = await historyService.getHistorial(userId);
 
         const formattedReports: Report[] = data.map((item: any) => {
           let mappedStatus: ReportStatus = REPORT_STATUS.WAITING;
@@ -56,17 +59,19 @@ const HistoryPage = (): React.ReactElement => {
     };
 
     fetchHistorial();
-  }, []);
+  }, [userId]);
 
   const handleDescargarPDF = async (cotizacionId: number) => {
-  try {
-    console.log('Descargando reporte ID:', cotizacionId);
-    await historyService.downloadReportPdf(cotizacionId, "1");
-  } catch (error) {
-    console.error('Error en handleDescargarPDF:', error);
-    alert('Error al descargar el reporte');
-  }
-};
+    try {
+      setDownloadingId(cotizacionId);
+      await historyService.downloadReportPdf(cotizacionId, userId);
+    } catch (error) {
+      console.error('Error en handleDescargarPDF:', error);
+      alert(error instanceof Error ? error.message : 'Error al descargar el reporte');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const vehicleFilterOptions: string[] = useMemo(() => {
     const uniqueVehicles = Array.from(new Set(reports.map((report) => report.vehicle)));
@@ -146,8 +151,9 @@ const HistoryPage = (): React.ReactElement => {
                 <button 
                   onClick={() => handleDescargarPDF(report.id)}
                   className={styles.pdfButton}
+                  disabled={downloadingId === report.id}
                 >
-                  PDF
+                  {downloadingId === report.id ? 'Descargando...' : 'PDF'}
                 </button>
               </div>
             </div>
