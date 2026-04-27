@@ -44,7 +44,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchMarcas() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/talleres/marcas`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/marcas`);
         const data = await res.json();
         const opciones = [
           { value: "all", label: "Marcas" },
@@ -59,18 +59,21 @@ export default function Page() {
   }, []);
 
   const filteredWorkshops = workshops.filter((workshop) => {
-    if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
-    
-    const matchesSearch =
-      workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
-      workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
-    
-    const matchesFilter =
-      filterValue === "all" ||
-      workshop.categoria.toLowerCase().includes(filterValue);
-    
-    return matchesSearch && matchesFilter;
-  });
+  if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
+  
+  const matchesSearch =
+    workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
+    workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
+  
+const matchesFilter =
+  filterValue === "all" ||
+  (workshop.marcas_soportadas && 
+   workshop.marcas_soportadas.some(
+     (m: string) => m.toLowerCase() === filterValue.toLowerCase()
+   ));
+  
+  return matchesSearch && matchesFilter;
+});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
