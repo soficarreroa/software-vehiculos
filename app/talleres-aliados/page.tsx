@@ -13,6 +13,9 @@ export default function Page() {
   const [submitting, setSubmitting] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [filterValue, setFilterValue] = useState("all");
+  const [marcas, setMarcas] = useState<{value: string, label: string}[]>([
+    { value: "all", label: "Marcas" }
+  ]);
   const [formData, setFormData] = useState({
     nombre: "",
     direccion: "",
@@ -38,7 +41,25 @@ export default function Page() {
     fetchTalleres();
   }, []);
 
+  useEffect(() => {
+    async function fetchMarcas() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/talleres/marcas`);
+        const data = await res.json();
+        const opciones = [
+          { value: "all", label: "Marcas" },
+          ...data.map((marca: string) => ({ value: marca.toLowerCase(), label: marca }))
+        ];
+        setMarcas(opciones);
+      } catch (error) {
+        console.error("Error al cargar marcas:", error);
+      }
+    }
+    fetchMarcas();
+  }, []);
+
   const filteredWorkshops = workshops.filter((workshop) => {
+<<<<<<< Updated upstream
   if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
   
   const matchesSearch =
@@ -51,6 +72,20 @@ export default function Page() {
   
   return matchesSearch && matchesFilter;
 });
+=======
+    if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
+    
+    const matchesSearch =
+      workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
+      workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
+    
+    const matchesFilter =
+      filterValue === "all" ||
+      workshop.marcas_soportadas?.some((marca) => marca.toLowerCase().includes(filterValue));
+    
+    return matchesSearch && matchesFilter;
+  });
+>>>>>>> Stashed changes
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +135,7 @@ export default function Page() {
         </button>
       </div>
 
-      <SearchBar onSearch={setSearchValue} onFilterChange={setFilterValue} />
+      <SearchBar onSearch={setSearchValue} onFilterChange={setFilterValue} options={marcas} />
 
       {loading ? (
         <p>Cargando talleres...</p>
