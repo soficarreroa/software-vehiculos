@@ -15,7 +15,7 @@
 }
 
 .subtitle {
-  color: var(--text-light); 
+  color: var(--text-light);
   font-size: 0.95rem;
 }
 
@@ -45,7 +45,7 @@
 .activeFilter {
   padding: 6px 16px;
   border-radius: 20px;
-  border: 1px solid  var(--primary-color);
+  border: 1px solid var(--primary-color);
   background: var(--primary-bg);
   color: var(--primary-color);
   font-size: 0.875rem;
@@ -100,4 +100,26 @@
 .detailItem span {
   font-weight: 600;
   color: var(--text-main);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .detailsRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .filterBar {
+    gap: 4px;
+  }
+  
+  .filterBtn, .activeFilter {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+  }
 }
