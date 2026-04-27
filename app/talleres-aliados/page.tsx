@@ -59,20 +59,6 @@ export default function Page() {
   }, []);
 
   const filteredWorkshops = workshops.filter((workshop) => {
-<<<<<<< Updated upstream
-  if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
-  
-  const matchesSearch =
-    workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
-    workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
-  
-  const matchesFilter =
-    filterValue === "all" ||
-    workshop.categoria.toLowerCase().includes(filterValue);
-  
-  return matchesSearch && matchesFilter;
-});
-=======
     if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
     
     const matchesSearch =
@@ -81,11 +67,10 @@ export default function Page() {
     
     const matchesFilter =
       filterValue === "all" ||
-      workshop.marcas_soportadas?.some((marca) => marca.toLowerCase().includes(filterValue));
+      workshop.categoria.toLowerCase().includes(filterValue);
     
     return matchesSearch && matchesFilter;
   });
->>>>>>> Stashed changes
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
