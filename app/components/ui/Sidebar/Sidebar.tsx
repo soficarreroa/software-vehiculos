@@ -18,7 +18,7 @@ export default function Sidebar() {
 
   return (
     <nav className={styles.nav}>
-      <div className={styles.logo}>🚗 AutoPerito</div>
+      <div className={styles.logo}>🚗 DamaScope</div>
       {menuItems.map((item) => (
         <Link
           key={item.href}
