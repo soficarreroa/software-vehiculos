@@ -29,10 +29,20 @@ export default function Sidebar() {
         </Link>
       ))}
       <div className={styles.footer}>
-        <Link href="#" className={styles.navLink}>
-          Ajustes
-        </Link>
-      </div>
+  <Link href="#" className={styles.navLink}>
+    Ajustes
+  </Link>
+  <button
+    className={styles.navLink}
+    style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left", color: "#94a3b8" }}
+    onClick={() => {
+      localStorage.removeItem("usuario");
+      window.location.href = "/login";
+    }}
+  >
+    Cerrar sesión
+  </button>
+</div>
     </nav>
   );
 }
