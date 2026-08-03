@@ -11,15 +11,18 @@
 
 .main {
   flex: 1;
-  padding: 40px;
+  padding: 20px 16px;
   max-width: 1000px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .headerMain {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 30px;
 }
 
@@ -61,8 +64,26 @@
 
 .gridOptions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: 40px;
+  }
+
+  .headerMain {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .gridOptions {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
 }
 
 .optionCard {
@@ -73,6 +94,7 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
+  min-width: 0;
 }
 
 .optionCard:hover {
@@ -103,10 +125,4 @@
   color: var(--text-light);
   font-size: 0.9rem;
   line-height: 1.5;
-}
-
-@media (max-width: 768px) {
-  .main {
-    padding: 20px;
-  }
 }
