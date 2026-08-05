@@ -1,21 +1,23 @@
 /* MisVehiculosPage.module.css */
 
 .pageContainer {
-    padding: 40px;
+    padding: 20px 16px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .headerSection {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 30px;
 }
 
 .title {
     margin: 0;
     color: var(--text-main, #0f172a);
-    font-size: 1.875rem;
+    font-size: 1.6rem;
     font-weight: 700;
 }
 
@@ -34,6 +36,8 @@
     cursor: pointer;
     display: inline-block;
     transition: background 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .btnAdd:hover {
@@ -59,23 +63,33 @@
     background: var(--card-bg, #ffffff);
     border: 1px solid var(--border-color, #e2e8f0);
     border-radius: 16px;
-    padding: 25px;
+    padding: 20px;
     display: flex;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     margin-bottom: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
 }
 
 .vehicleIcon {
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     background: #f1f5f9;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.vehicleInfo {
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .vehicleInfo h3 {
@@ -97,7 +111,13 @@
 .actions { 
     display: flex; 
     gap: 10px; 
-    margin-left: auto; /* Empuja los botones a la derecha */
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.actions > * {
+    flex: 1;
+    min-width: 0;
 }
 
 .btnOutline {
@@ -113,6 +133,48 @@
 
 .btnOutline:hover {
     background-color: #f1f5f9;
+}
+
+@media (min-width: 768px) {
+    .pageContainer {
+        padding: 40px;
+    }
+
+    .headerSection {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .title {
+        font-size: 1.875rem;
+    }
+
+    .btnAdd {
+        width: auto;
+    }
+
+    .vehicleCard {
+        flex-direction: row;
+        align-items: center;
+        gap: 20px;
+        padding: 25px;
+    }
+
+    .vehicleIcon {
+        width: 80px;
+        height: 80px;
+        font-size: 2rem;
+    }
+
+    .actions {
+        width: auto;
+        margin-left: auto;
+    }
+
+    .actions > * {
+        flex: none;
+    }
 }
 
 /* Estilos para el Formulario */
@@ -146,6 +208,9 @@
   background: white;
   padding: 20px;
   margin-bottom: 30px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .editingBorder {
@@ -173,12 +238,33 @@
 
 .inputGroup {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .formActions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
   margin-top: 10px;
+}
+
+.formActions > * {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .inputGroup {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .formActions {
+    flex-direction: row;
+  }
+
+  .formActions > * {
+    width: auto;
+  }
 }
