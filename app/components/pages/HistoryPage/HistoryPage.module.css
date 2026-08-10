@@ -1,11 +1,6 @@
 .container {
-<<<<<<< HEAD
   padding: 32px;
   max-width: 900px;
-=======
-  padding: 20px 16px;
-  max-width: 800px;
->>>>>>> origin/main
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -146,7 +141,6 @@
   font-size: 0.75rem;
 }
 
-<<<<<<< HEAD
 /* Columna de acciones */
 .actionsColumn {
   display: flex;
@@ -174,25 +168,12 @@
 }
 
 
-=======
-@media (min-width: 768px) {
-  .container {
-    padding: 32px;
-  }
-
-  .title {
-    font-size: 1.8rem;
-  }
-}
-
->>>>>>> origin/main
 /* Responsive */
 @media (max-width: 768px) {
   .container {
     padding: 16px;
   }
 
-<<<<<<< HEAD
   .reportCard {
      display: flex;
   align-items: center;
@@ -236,21 +217,5 @@
 
   .separator {
     display: none;
-=======
-  .detailsRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .filterBar {
-    gap: 4px;
-  }
-
-  .filterBtn,
-  .activeFilter {
-    padding: 4px 12px;
-    font-size: 0.75rem;
->>>>>>> origin/main
   }
 }
