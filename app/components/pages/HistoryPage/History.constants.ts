@@ -1,10 +1,10 @@
 export const FILTER_DEFAULT = 'Todos';
 
-export const REPORT_STATUS = {
+export const REPORT_STATUS = { //Estados del Reporte -dic
   WAITING: 'En espera',
   REPAIRED: 'Reparado',
   CANCELLED: 'Cancelado',
-} as const;
+} as const; //Textos fijos de solo lectura  
 
 export type ReportStatus = typeof REPORT_STATUS[keyof typeof REPORT_STATUS];
 export type PillColor = 'success' | 'warning' | 'error';

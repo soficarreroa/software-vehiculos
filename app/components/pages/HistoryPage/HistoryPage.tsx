@@ -1,7 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from 'react';
 import styles from './HistoryPage.module.css';
-import Card from '../../ui/Card/Card';
 import Pill from '../../ui/Pill/Pill';
 import { FILTER_DEFAULT, REPORT_STATUS, STATUS_PILL_COLOR, ReportStatus, ERROR_MESSAGES } from './History.constants';
 import { historyService } from './History.service';
@@ -21,13 +20,17 @@ const HistoryPage = (): React.ReactElement => {
   const [filter, setFilter] = useState<string>(FILTER_DEFAULT);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  // ⚠️ IMPORTANTE: Reemplazar con el ID real del usuario logueado (desde contexto, localStorage, etc.)
+  const userId = "1";
 
   useEffect(() => {
     const fetchHistorial = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await historyService.getHistorial("1"); // El uno se debe remplazar por el id del usuario
+        const data = await historyService.getHistorial(userId);
 
         const formattedReports: Report[] = data.map((item: any) => {
           let mappedStatus: ReportStatus = REPORT_STATUS.WAITING;
@@ -56,14 +59,17 @@ const HistoryPage = (): React.ReactElement => {
     };
 
     fetchHistorial();
-  }, []);
+  }, [userId]);
 
   const handleDescargarPDF = async (cotizacionId: number) => {
     try {
-      await historyService.downloadReportPdf(cotizacionId, "2");
+      setDownloadingId(cotizacionId);
+      await historyService.downloadReportPdf(cotizacionId, userId);
     } catch (error) {
-      console.error(ERROR_MESSAGES.DOWNLOAD_ERROR, error);
-      setError(ERROR_MESSAGES.DOWNLOAD_ERROR);
+      console.error('Error en handleDescargarPDF:', error);
+      alert(error instanceof Error ? error.message : 'Error al descargar el reporte');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -75,6 +81,15 @@ const HistoryPage = (): React.ReactElement => {
   const filteredReports: Report[] = filter === FILTER_DEFAULT
     ? reports
     : reports.filter((report) => report.vehicle === filter);
+
+  // Obtener día y mes por separado
+  const getDay = (date: Date): string => {
+    return date.getDate().toString();
+  };
+
+  const getMonth = (date: Date): string => {
+    return date.toLocaleDateString('es-CO', { month: 'short' }).toUpperCase().replace('.', '');
+  };
 
   if (error) {
     return (
@@ -113,37 +128,36 @@ const HistoryPage = (): React.ReactElement => {
         ) : reports.length === 0 ? (
           <div className={styles.emptyState}><p>{ERROR_MESSAGES.NO_REPORTS}</p></div>
         ) : (
-          filteredReports.map((report) => {
-            const formattedDate = report.date.toLocaleDateString('es-CO', {
-              day: '2-digit',
-              month: 'short',
-            });
-            const [day, month] = formattedDate.split(' ');
-
-            return (
-              <Card
-                key={report.id}
-                direction="row"
-                icon={
-                  <div className={styles.dateContainer}>
-                    <span className={styles.day}>{day}</span>
-                    <span className={styles.month}>{month?.replace('.', '')}</span>
-                  </div>
-                }
-                title={`${report.damage} - ${report.vehicle}`}
-                description={
-                  <div className={styles.detailsRow}>
-                    <div className={styles.detailItem}><span>Placa:</span> {report.plate}</div>
-                    <div className={styles.detailItem}><span>Valor:</span> ${report.value.toLocaleString()}</div>
-                    <Pill color={STATUS_PILL_COLOR[report.status]}>
-                      {report.status}
-                    </Pill>
-                  </div>
-                }
-                onClick={() => handleDescargarPDF(report.id)}
-              />
-            );
-          })
+          filteredReports.map((report) => (
+            <div key={report.id} className={styles.reportCard}>
+              <div className={styles.dateColumn}>
+                <span className={styles.dayText}>{getDay(report.date)}</span>
+                <span className={styles.monthText}>{getMonth(report.date)}</span>
+              </div>
+              <div className={styles.contentColumn}>
+                <div className={styles.titleRow}>
+                  <h3 className={styles.reportTitle}>{report.damage} - {report.vehicle}</h3>
+                </div>
+                <div className={styles.detailsRow}>
+                  <span className={styles.plate}>Placa: {report.plate}</span>
+                  <span className={styles.separator}>•</span>
+                  <span className={styles.value}>Valor: ${report.value.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className={styles.actionsColumn}>
+                <Pill color={STATUS_PILL_COLOR[report.status]}>
+                  {report.status}
+                </Pill>
+                <button 
+                  onClick={() => handleDescargarPDF(report.id)}
+                  className={styles.pdfButton}
+                  disabled={downloadingId === report.id}
+                >
+                  {downloadingId === report.id ? 'Descargando...' : 'PDF'}
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </main>
     </div>
