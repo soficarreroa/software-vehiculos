@@ -1,7 +1,9 @@
 .container {
-  padding: 40px;
+  padding: 20px 16px;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header {
@@ -9,19 +11,21 @@
 }
 
 .header h1 {
-  font-size: 2rem;
+  font-size: 1.6rem;
   color: #0f172a;
   margin: 0;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
+  width: 100%;
 }
 
 .stepCard {
-  padding: 24px;
+  padding: 20px 0;
+  min-width: 0;
 }
 
 .stepTitle {
@@ -51,6 +55,9 @@
   border-radius: 8px;
   font-size: 1rem;
   outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .textarea {
@@ -72,10 +79,44 @@
   padding-top: 20px;
 }
 
-/* Responsive */
+.actions > * {
+  min-width: 0;
+}
+
 @media (max-width: 768px) {
+  .actions {
+    justify-content: stretch;
+  }
+
+  .actions > * {
+    width: 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 40px;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .stepCard {
+    padding: 24px;
+  }
+
+  .actions {
+    justify-content: flex-end;
+  }
+
+  .actions > * {
+    width: auto;
   }
 }
 

@@ -5,6 +5,19 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
+  font-family: inherit;
+  font-size: 0.95rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.root:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .green {

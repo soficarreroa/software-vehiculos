@@ -1,8 +1,10 @@
 .main {
   flex: 1;
-  padding: 40px;
+  padding: 20px 16px;
   max-width: 1100px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .headerMain {
@@ -10,7 +12,7 @@
 }
 
 .title {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -23,22 +25,27 @@
 
 .searchContainer {
   display: flex;
-  gap: 15px;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 30px;
+  width: 100%;
 }
 
 .searchInput {
   flex: 1;
+  min-width: 0;
 }
 
 .filterSelect {
-  min-width: 180px;
+  width: 100%;
+  min-width: 0;
 }
 
 .gridWorkshops {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 25px;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
 }
 
 .workshopCard {
@@ -48,6 +55,7 @@
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  min-width: 0;
 }
 
 .workshopCard:hover {
@@ -66,6 +74,8 @@
 
 .workshopBody {
   padding: 20px;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .workshopBadge {
@@ -92,14 +102,20 @@
   align-items: center;
   gap: 5px;
   margin-bottom: 15px;
+  flex-wrap: wrap;
 }
 
 .workshopFooter {
   border-top: 1px solid var(--workshop-footer-border);
   padding-top: 15px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.workshopFooter > * {
+  min-width: 0;
 }
 
 .rating {
@@ -112,17 +128,36 @@
   font-weight: normal;
 }
 
-@media (max-width: 768px) {
-  .main {
-    padding: 20px;
+@media (min-width: 768px) {
+  .searchContainer {
+    flex-direction: row;
+    gap: 15px;
   }
 
-  .searchContainer {
-    flex-direction: column;
+  .filterSelect {
+    width: auto;
+    min-width: 180px;
   }
 
   .gridWorkshops {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+  }
+
+  .workshopFooter {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main {
+    padding: 40px;
+  }
+
+  .title {
+    font-size: 1.8rem;
   }
 }
 
@@ -155,7 +190,7 @@
 
 .headerActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: stretch;
   margin-bottom: 20px;
 }
 
@@ -169,6 +204,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .addButton:hover {
@@ -187,18 +224,20 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .formContainer {
   background: var(--card-bg);
   border-radius: 16px;
-  padding: 30px;
+  padding: 20px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 .formTitle {
@@ -269,6 +308,7 @@
 
 .formActions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-top: 24px;
 }
@@ -284,6 +324,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .submitButton:hover {
@@ -306,9 +348,34 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .cancelButton:hover {
   background: var(--hover-bg, #f5f5f5);
   color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .headerActions {
+    justify-content: flex-end;
+  }
+
+  .addButton {
+    width: auto;
+  }
+
+  .formContainer {
+    padding: 30px;
+  }
+
+  .formActions {
+    flex-direction: row;
+  }
+
+  .submitButton,
+  .cancelButton {
+    width: auto;
+  }
 }
