@@ -5,7 +5,7 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtcGt3cHVybnVqb2ViempnbHpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ5NTMsImV4cCI6MjA5MTIzMDk1M30.vhHL0H8C1-UfLFMs1NBJDXUmHllZl-DqJ_0sUCrC47U'
 );
 
-export interface HistoryEntry {
+export interface HistoryEntry { // Datos de cada Card del Historial
   id: number;
   fecha: string;
   descripcion_siniestro: string;
