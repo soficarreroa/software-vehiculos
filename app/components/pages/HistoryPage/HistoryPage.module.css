@@ -1,5 +1,5 @@
 .container {
-  padding: 32px;
+  padding: 20px 16px;
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
@@ -80,7 +80,7 @@
 }
 
 .reportCard:hover {
-   transform: scale(1.02); 
+  transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -94,7 +94,7 @@
 }
 
 .dayText {
-  font-size: 2 rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--text-main);
   line-height: 1;
@@ -111,6 +111,7 @@
 /* Columna de contenido */
 .contentColumn {
   flex: 1;
+  min-width: 0;
 }
 
 .titleRow {
@@ -136,6 +137,11 @@
   color: var(--text-light);
 }
 
+.detailItem span {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
 .separator {
   color: var(--text-light);
   font-size: 0.75rem;
@@ -153,8 +159,8 @@
 .pdfButton {
   padding: 6px 16px;
   background-color: transparent;
-  color: var(--text-light);  /* ← Texto gris */
-  border: 1px solid var(--card-border);  /* ← Borde gris como la card */
+  color: var(--text-light);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
@@ -163,26 +169,30 @@
 }
 
 .pdfButton:hover {
-  background-color: var(--card-border);  /* ← Fondo gris claro al hover */
-  color: var(--text-main);  /* ← Texto más oscuro al hover */
+  background-color: var(--card-border);
+  color: var(--text-main);
 }
 
+/* Responsive desktop */
+@media (min-width: 768px) {
+  .container {
+    padding: 32px;
+  }
 
-/* Responsive */
+  .title {
+    font-size: 1.8rem;
+  }
+}
+
+/* Responsive mobile */
 @media (max-width: 768px) {
   .container {
     padding: 16px;
   }
 
   .reportCard {
-     display: flex;
-  align-items: center;
-  background: var(--bg-primary);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  gap: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .dateColumn {
@@ -199,6 +209,18 @@
     margin-top: 0;
   }
 
+  .detailsRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .filterBtn,
+  .activeFilter {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+  }
+
   .actionsColumn {
     width: 100%;
     justify-content: stretch;
@@ -207,12 +229,6 @@
   .pdfButton {
     flex: 1;
     text-align: center;
-  }
-
-  .detailsRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
   }
 
   .separator {
