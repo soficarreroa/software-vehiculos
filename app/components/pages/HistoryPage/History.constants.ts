@@ -1,26 +1,34 @@
-export const FILTER_DEFAULT = 'Todos';
+export enum ReportStatus {
+  WAITING = "En espera",
+  REPAIRED = "Reparado",
+  CANCELLED = "Cancelado",
+}
 
-export const REPORT_STATUS = { //Estados del Reporte -dic
-  WAITING: 'En espera',
-  REPAIRED: 'Reparado',
-  CANCELLED: 'Cancelado',
-} as const; //Textos fijos de solo lectura  
+export const FILTER_DEFAULT = "Todos";
 
-export type ReportStatus = typeof REPORT_STATUS[keyof typeof REPORT_STATUS];
-export type PillColor = 'success' | 'warning' | 'error';
-
-export const STATUS_PILL_COLOR: { [key in ReportStatus]: PillColor } = {
-  [REPORT_STATUS.REPAIRED]: 'success',
-  [REPORT_STATUS.WAITING]: 'warning',
-  [REPORT_STATUS.CANCELLED]: 'error',
+// Mapeo con nombres de variantes estándar (útil si Pill usa 'warning', 'success', etc.)
+export const STATUS_PILL_COLOR: Record<ReportStatus, string> = {
+  [ReportStatus.WAITING]: "warning",
+  [ReportStatus.REPAIRED]: "success",
+  [ReportStatus.CANCELLED]: "danger",
 };
 
-// Configuraciones de paginación
-export const ROWS_PER_PAGE = 10;
+export const STATUS_MAP: Record<string, ReportStatus> = {
+  "En espera": ReportStatus.WAITING,
+  "Reparado": ReportStatus.REPAIRED,
+  "Cancelado": ReportStatus.CANCELLED,
+  "Pendiente": ReportStatus.WAITING,
+  "Completado": ReportStatus.REPAIRED,
+};
 
-// Mensajes estáticos
 export const ERROR_MESSAGES = {
-  LOAD_ERROR: 'Error cargando el historial',
-  NO_REPORTS: 'No hay informes disponibles',
-  DOWNLOAD_ERROR: 'Error al descargar el PDF',
+  LOAD_ERROR: "Ocurrió un error al cargar el historial de reportes.",
+  NO_REPORTS: "No se encontraron reportes disponibles.",
+  UNKNOWN_VEHICLE: "Vehículo desconocido",
+  NO_DESCRIPTION: "Sin descripción",
+  DEFAULT_PLATE: "---",
+} as const;
+
+export const LOCALE_CONFIG = {
+  CODE: "es-CO",
 } as const;
