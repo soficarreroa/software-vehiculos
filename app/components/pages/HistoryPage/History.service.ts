@@ -42,25 +42,28 @@ export const historyService = {
   },
 
   async downloadReportPdf(cotizacionId: number, userId: string): Promise<void> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/historial/${cotizacionId}/descargar-pdf?user_id=${userId}`
-    );
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/historial/${cotizacionId}/descargar-pdf?user_id=${userId}`
+  );
 
-    if (!response.ok) {
-      const errorHtml = await response.text();
-      console.error("Error al descargar PDF:", errorHtml);
-      throw new Error("Error al descargar el archivo PDF.");
-    }
+  if (!response.ok) {
+    const errorHtml = await response.text();
+    console.error("Error al descargar PDF:", errorHtml);
+    throw new Error("Error al descargar el archivo PDF.");
+  }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `reporte_${cotizacionId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  
+  // Nombre fijo para la descarga
+  link.download = "Reporte_Autoperito.pdf";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
   },
 
   mapDTOToReport(dto: ReportBackendDTO): Report {
