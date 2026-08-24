@@ -14,6 +14,7 @@
   font-size: 1.6rem;
   font-weight: 700;
   margin-bottom: 8px;
+  color: var(--text-main);
 }
 
 .subtitle {
@@ -21,6 +22,7 @@
   font-size: 0.95rem;
 }
 
+/* Filtros unificados (DRY) */
 .filterBar {
   display: flex;
   gap: 8px;
@@ -28,7 +30,7 @@
   flex-wrap: wrap;
 }
 
-.filterBtn {
+.filterChip {
   padding: 6px 16px;
   border-radius: 20px;
   border: 1px solid var(--card-border);
@@ -36,22 +38,18 @@
   color: var(--text-light);
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.filterBtn:hover {
+.filterChip:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
 }
 
-.activeFilter {
-  padding: 6px 16px;
-  border-radius: 20px;
-  border: 1px solid var(--primary-color);
+.filterChip.active {
+  border-color: var(--primary-color);
   background: var(--primary-bg);
   color: var(--primary-color);
-  font-size: 0.875rem;
-  cursor: pointer;
   font-weight: 600;
 }
 
@@ -64,7 +62,7 @@
 .emptyState {
   text-align: center;
   padding: 48px;
-  color: var(--sidebar-text);
+  color: var(--text-light);
 }
 
 /* Tarjeta de reporte */
@@ -76,53 +74,54 @@
   border-radius: 12px;
   padding: 16px 20px;
   gap: 20px;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .reportCard:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Columna de fecha */
-.dateColumn {
+/* Badge de fecha compacto */
+.dateBadge {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 70px;
+  min-width: 60px;
+  padding: 8px 12px;
+  background-color: var(--primary-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  flex-shrink: 0;
 }
 
 .dayText {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: var(--text-main);
   line-height: 1;
 }
 
 .monthText {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--primary-color);
   text-transform: uppercase;
   margin-top: 4px;
+  letter-spacing: 0.5px;
 }
 
-/* Columna de contenido */
 .contentColumn {
   flex: 1;
   min-width: 0;
-}
-
-.titleRow {
-  margin-bottom: 8px;
 }
 
 .reportTitle {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-main);
-  margin: 0;
+  margin: 0 0 6px 0;
 }
 
 .detailsRow {
@@ -132,14 +131,9 @@
   flex-wrap: wrap;
 }
 
-.plate, .value {
+.detailText {
   font-size: 0.875rem;
   color: var(--text-light);
-}
-
-.detailItem span {
-  font-weight: 600;
-  color: var(--text-main);
 }
 
 .separator {
@@ -147,7 +141,6 @@
   font-size: 0.75rem;
 }
 
-/* Columna de acciones */
 .actionsColumn {
   display: flex;
   align-items: center;
@@ -165,26 +158,28 @@
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.pdfButton:hover {
+.pdfButton:hover:not(:disabled) {
   background-color: var(--card-border);
   color: var(--text-main);
 }
 
-/* Responsive desktop */
+.pdfButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (min-width: 768px) {
   .container {
     padding: 32px;
   }
-
   .title {
     font-size: 1.8rem;
   }
 }
 
-/* Responsive mobile */
 @media (max-width: 768px) {
   .container {
     padding: 16px;
@@ -195,14 +190,15 @@
     align-items: flex-start;
   }
 
-  .dateColumn {
+  .dateBadge {
     flex-direction: row;
-    gap: 8px;
+    gap: 6px;
     min-width: auto;
+    padding: 4px 10px;
   }
 
   .dayText {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
   }
 
   .monthText {
@@ -212,26 +208,49 @@
   .detailsRow {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-  }
-
-  .filterBtn,
-  .activeFilter {
-    padding: 4px 12px;
-    font-size: 0.75rem;
-  }
-
-  .actionsColumn {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .pdfButton {
-    flex: 1;
-    text-align: center;
+    gap: 2px;
   }
 
   .separator {
     display: none;
   }
+
+  .actionsColumn {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Estilos para badges de estado */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* En espera: Amarillo / Ámbar suave */
+.statusWaiting {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+/* Reparado: Verde suave */
+.statusRepaired {
+  background-color: #d1fae5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* Cancelado: Rojo suave */
+.statusCancelled {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
 }
