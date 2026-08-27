@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import WorkshopCard from "../components/pages/TalleresAliadosPage/WorkshopCard";
-import SearchBar from "../components/pages/TalleresAliadosPage/SearchBar";
-import { Workshop } from "../types/workshop";
-import styles from "../components/pages/TalleresAliadosPage/talleresaliados.module.css";
-
+import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCard";
+import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
+import { Workshop } from "../../types/workshop";
+import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.module.css";
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
