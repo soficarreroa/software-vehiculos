@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 
 import { loginSchema, type LoginFormValues } from "./Login.schema";
 import { loginRequest } from "./Login.service";
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -49,7 +51,22 @@ export default function LoginPage() {
 
       <div className={styles.field}>
         <label htmlFor="contrasena">Contraseña</label>
-        <input id="contrasena" type="password" autoComplete="current-password" {...register("contrasena")} />
+        <div className={styles.passwordWrapper}>
+          <input
+            id="contrasena"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            {...register("contrasena")}
+          />
+          <button
+            type="button"
+            className={styles.eyeButton}
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
         {errors.contrasena && <span className={styles.errorText}>{errors.contrasena.message}</span>}
       </div>
 
