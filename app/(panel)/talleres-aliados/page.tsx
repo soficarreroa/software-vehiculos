@@ -5,6 +5,8 @@ import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCar
 import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
 import { Workshop } from "../../types/workshop";
 import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.module.css";
+import RoleGate from "@/app/lib/auth/RoleGate";
+
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function Page() {
     certificado: false,
   });
 
+  // Esta carga de talleres es IGUAL para los tres roles. No depende del usuario.
   useEffect(() => {
     async function fetchTalleres() {
       try {
@@ -58,21 +61,21 @@ export default function Page() {
   }, []);
 
   const filteredWorkshops = workshops.filter((workshop) => {
-  if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
-  
-  const matchesSearch =
-    workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
-    workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
-  
-const matchesFilter =
-  filterValue === "all" ||
-  (workshop.marcas_soportadas && 
-   workshop.marcas_soportadas.some(
-     (m: string) => m.toLowerCase() === filterValue.toLowerCase()
-   ));
-  
-  return matchesSearch && matchesFilter;
-});
+    if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
+
+    const matchesSearch =
+      workshop.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
+      workshop.direccion.toLowerCase().includes(searchValue.toLowerCase());
+
+    const matchesFilter =
+      filterValue === "all" ||
+      (workshop.marcas_soportadas &&
+        workshop.marcas_soportadas.some(
+          (m: string) => m.toLowerCase() === filterValue.toLowerCase()
+        ));
+
+    return matchesSearch && matchesFilter;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,11 +119,14 @@ const matchesFilter =
         </p>
       </div>
 
-      <div className={styles.headerActions}>
-        <button className={styles.addButton} onClick={() => setShowForm(true)}>
-          + Agregar Taller
-        </button>
-      </div>
+      {/* SOLO el botón depende del rol. Todo lo demás es igual para los tres. */}
+      <RoleGate excludeRoles={["cliente"]}>
+        <div className={styles.headerActions}>
+          <button className={styles.addButton} onClick={() => setShowForm(true)}>
+            + Agregar Taller
+          </button>
+        </div>
+      </RoleGate>
 
       <SearchBar onSearch={setSearchValue} onFilterChange={setFilterValue} options={marcas} />
 
