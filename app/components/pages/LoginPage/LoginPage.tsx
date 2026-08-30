@@ -31,6 +31,7 @@ export default function LoginPage() {
       localStorage.setItem("access_token", result.access_token);
       localStorage.setItem("refresh_token", result.refresh_token);
       localStorage.setItem("usuario", JSON.stringify(result.usuario));
+      localStorage.setItem("expira_en", String(Date.now() + result.expires_in * 1000));
       router.push("/");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Error inesperado");
