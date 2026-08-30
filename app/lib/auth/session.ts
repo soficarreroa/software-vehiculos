@@ -28,3 +28,9 @@ export function puedeGestionarTalleres(usuario: UsuarioSesion | null): boolean {
   if (!usuario) return false;
   return usuario.rol !== "cliente";
 }
+
+export function sesionVencida(): boolean {
+  const expiraEn = localStorage.getItem("expira_en");
+  if (!expiraEn) return true;
+  return Date.now() > Number(expiraEn);
+}
