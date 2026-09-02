@@ -34,3 +34,16 @@ export function sesionVencida(): boolean {
   if (!expiraEn) return true;
   return Date.now() > Number(expiraEn);
 }
+
+export function rutaPorRol(rol: string): string {
+  switch (rol) {
+    case "cliente":
+      return "/mis-vehiculos";
+    case "taller":
+      return "/talleres-aliados";
+    case "admin":
+      return "/";
+    default:
+      return "/no-autorizado";
+  }
+}
