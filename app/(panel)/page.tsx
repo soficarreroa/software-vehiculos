@@ -5,7 +5,7 @@ import RoleRoute from "@/app/lib/auth/RoleRoute";
 
 export default function Home() {
   return (
-    <RoleRoute allowedRoles={["admin"]}>
+    <RoleRoute allowedRoles={["cliente", "taller", "admin"]}>
       <ControlPanelPage />
     </RoleRoute>
   );
