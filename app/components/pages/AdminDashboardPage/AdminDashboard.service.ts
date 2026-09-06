@@ -33,6 +33,40 @@ export interface UsuarioAdmin {
   creado_en: string;
 }
 
+export interface PiezaAdmin {
+  id: number;
+  codigo: string | null;
+  nombre: string;
+  zona: string | null;
+  descripcion: string | null;
+}
+
+export interface CatalogoPrecioAdmin {
+  id: number;
+  pieza_id: number;
+  pieza_nombre: string;
+  marca: string;
+  modelo: string;
+  ano_desde: number;
+  ano_hasta: number;
+  precio_repuesto: number;
+  precio_mano_obra: number | null;
+  precio_pintura: number | null;
+  moneda: string;
+}
+
+export interface NuevoCatalogoPrecio {
+  pieza_id: number;
+  marca: string;
+  modelo: string;
+  ano_desde: number;
+  ano_hasta: number;
+  precio_repuesto: number;
+  precio_mano_obra: number | null;
+  precio_pintura: number | null;
+  moneda: string;
+}
+
 function authHeaders(): HeadersInit {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
@@ -103,5 +137,37 @@ export const adminService = {
     );
     if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
     return response.json();
+  },
+
+  async getPiezas(): Promise<PiezaAdmin[]> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/piezas`, {
+      headers: authHeaders(),
+    });
+    return manejarRespuesta<PiezaAdmin[]>(response);
+  },
+
+  async getCatalogoPrecios(): Promise<CatalogoPrecioAdmin[]> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/catalogo-precios`, {
+      headers: authHeaders(),
+    });
+    return manejarRespuesta<CatalogoPrecioAdmin[]>(response);
+  },
+
+  async crearPrecioCatalogo(payload: NuevoCatalogoPrecio): Promise<CatalogoPrecioAdmin> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/catalogo-precios`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
+    return response.json();
+  },
+
+  async eliminarPrecioCatalogo(precioId: number): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/admin/catalogo-precios/${precioId}`,
+      { method: "DELETE", headers: authHeaders() }
+    );
+    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
   },
 };

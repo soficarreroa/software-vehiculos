@@ -223,3 +223,63 @@
   margin-bottom: 16px;
   max-width: 320px;
 }
+
+.sectionHint {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin: -8px 0 16px 0;
+}
+
+.priceForm {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.priceFormGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+  .priceFormGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.priceFormField label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 18px;
+  cursor: pointer;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.sectionHeader:hover {
+  background: #f8fafc;
+}
+
+.sectionHeader .sectionTitle {
+  margin: 0;
+}
+
+.sectionBody {
+  margin-top: 16px;
+}
