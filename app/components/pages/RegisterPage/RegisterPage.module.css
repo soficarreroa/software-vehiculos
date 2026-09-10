@@ -85,7 +85,8 @@
   font-weight: 500;
 }
 
-.field input {
+.field input,
+.field select {
   padding: 10px 12px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -110,7 +111,8 @@
 }
 
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   outline: none;
   border-color: var(--primary-color);
 }
@@ -122,6 +124,55 @@
 
 .brandEntry input {
   flex: 1;
+}
+
+.choiceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.choice,
+.choiceActive {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  color: var(--text-main);
+  background: var(--bg-primary);
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.choiceActive {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--primary-bg);
+  font-weight: 600;
+}
+
+.passwordChecklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 0.75rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.76rem;
+}
+
+.requirementMet,
+.requirementMissing {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.requirementMet {
+  color: var(--btn-green);
+}
+
+.requirementMissing {
+  color: var(--text-light);
 }
 
 .brandEntry button {
@@ -223,5 +274,9 @@
 
   .brandEntry {
     flex-direction: column;
+  }
+
+  .passwordChecklist {
+    grid-template-columns: 1fr;
   }
 }

@@ -44,11 +44,21 @@ export async function registerRequest(
     throw new Error("La URL de la API no está configurada.");
   }
 
-  const response = await fetch(`${API_URL}/auth/registro/${role}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL.replace(/\/+$/, "")}/auth/registro/${role}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        `No se pudo conectar con el servidor (${API_URL}). Verifica que la API esté encendida y que CORS permita este frontend.`,
+      );
+    }
+    throw error;
+  }
 
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {

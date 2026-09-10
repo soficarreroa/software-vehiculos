@@ -1,25 +1,77 @@
 import { z } from "zod";
 
+export const SUPPORTED_BRANDS = [
+  "Chevrolet",
+  "Renault",
+  "Mazda",
+  "Toyota",
+  "Kia",
+  "Nissan",
+  "Hyundai",
+  "Volkswagen",
+  "Ford",
+  "BMW",
+  "Mercedes-Benz",
+] as const;
+
+export const VEHICLE_MODELS = [
+  "Spark",
+  "Onix",
+  "Logan",
+  "Duster",
+  "Mazda 3",
+  "Corolla",
+  "Sportage",
+  "Civic",
+] as const;
+
+export const VEHICLE_COLORS = ["Blanco", "Negro", "Gris", "Rojo", "Azul", "Plata", "Verde", "Amarillo", "Café"] as const;
+export const BODY_TYPES = ["Sedán", "Hatchback", "SUV", "Pickup", "Camioneta", "Coupé", "Convertible", "Van", "Moto"] as const;
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, "El correo es obligatorio")
+  .regex(/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{2,64}@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z]{2,})+$/, "Ingresa un correo válido");
+
+const phoneSchema = z
+  .string()
+  .regex(/^3\d{2}(?: ?\d{3})(?: ?\d{4})$/, "Ingresa un celular colombiano de 10 dígitos que empiece por 3");
+
+const passwordSchema = z
+  .string()
+  .min(8, "Mínimo 8 caracteres")
+  .max(72, "Máximo 72 caracteres")
+  .regex(/[A-Z]/, "Incluye al menos una mayúscula")
+  .regex(/[a-z]/, "Incluye al menos una minúscula")
+  .regex(/\d/, "Incluye al menos un número")
+  .regex(/[@$!%*?&]/, "Incluye al menos un carácter especial (@ $ ! % * ? &)");
+
 const passwordFields = {
-  contrasena: z.string().min(8, "Mínimo 8 caracteres").max(72, "Máximo 72 caracteres"),
+  contrasena: passwordSchema,
   confirmar_contrasena: z.string().min(1, "Confirma tu contraseña"),
 };
 
 const vehicleFields = {
-  placa: z.string().trim().min(1, "La placa es obligatoria").optional(),
-  marca: z.string().trim().optional(),
-  modelo: z.string().trim().optional(),
-  color: z.string().trim().optional(),
-  anio_fabricacion: z.number().int("El año debe ser un número entero").min(1900).max(2100).optional(),
-  tipo_carroceria: z.string().trim().optional(),
+  placa: z
+    .string()
+    .trim()
+    .regex(/^[A-Z]{3}(?:\d{3}|\d{2}[A-Z])$/, "Usa ABC123 o ABC12D")
+    .optional()
+    .or(z.literal("")),
+  marca: z.enum(SUPPORTED_BRANDS).optional().or(z.literal("")),
+  modelo: z.enum(VEHICLE_MODELS).optional().or(z.literal("")),
+  color: z.enum(VEHICLE_COLORS).optional().or(z.literal("")),
+  anio_fabricacion: z.number().int("El año debe ser un número entero").min(1960).max(new Date().getFullYear() + 1).optional(),
+  tipo_carroceria: z.enum(BODY_TYPES).optional().or(z.literal("")),
   detalles_equipamiento: z.string().trim().optional(),
 };
 
 export const clienteRegisterSchema = z
   .object({
   nombre_completo: z.string().trim().min(2, "Ingresa tu nombre completo"),
-  correo: z.string().trim().min(1, "El correo es obligatorio").email("Ingresa un correo válido"),
-  telefono: z.string().trim().min(7, "Ingresa un teléfono válido"),
+  correo: emailSchema,
+  telefono: phoneSchema,
   ...passwordFields,
   ...vehicleFields,
   })
@@ -49,16 +101,14 @@ export const clienteRegisterSchema = z
 export const tallerRegisterSchema = z
   .object({
   nombre_representante: z.string().trim().min(2, "Ingresa el nombre del representante"),
-  correo_corporativo: z
-    .string()
-    .trim()
-    .min(1, "El correo corporativo es obligatorio")
-    .email("Ingresa un correo válido"),
+  correo_corporativo: emailSchema,
   nombre_comercial: z.string().trim().min(2, "Ingresa el nombre del taller"),
-  telefono_taller: z.string().trim().min(7, "Ingresa un teléfono válido"),
-  categoria_especialidad: z.string().trim().min(2, "Ingresa la especialidad"),
+  telefono_taller: phoneSchema,
+  categoria_especialidad: z.string().trim().min(2, "Agrega al menos una especialidad"),
   direccion_fisica: z.string().trim().min(5, "Ingresa una dirección válida"),
-  marcas_soportadas: z.array(z.string().trim().min(1)).min(1, "Agrega al menos una marca"),
+  marcas_soportadas: z
+    .array(z.enum(SUPPORTED_BRANDS))
+    .min(1, "Agrega al menos una marca"),
   notas_servicios: z.string().trim().optional(),
     ...passwordFields,
   })
