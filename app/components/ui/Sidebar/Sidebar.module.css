@@ -86,6 +86,27 @@
     margin-top: auto;
 }
 
+.logoutButton {
+    width: 100%;
+    padding: 12px 15px;
+    border: 0;
+    border-radius: 8px;
+    margin-top: 5px;
+    color: #fecaca;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.logoutButton:hover,
+.logoutButton:focus-visible {
+    color: #fff;
+    background-color: #7f1d1d;
+    outline: none;
+}
+
 @media (min-width: 1024px) {
     .nav {
         width: 260px;
