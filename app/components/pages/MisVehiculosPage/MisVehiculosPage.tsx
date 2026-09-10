@@ -4,17 +4,14 @@ import { useState, useEffect } from 'react';
 import styles from './MisVehiculosPage.module.css'; // Asegúrate de que el nombre coincida con tu archivo CSS
 import { VehicleCard } from './VehicleCard';
 import { VehicleForm } from './VehicleForm';
+import { authenticatedFetch, readApiError } from '@/app/lib/api/client';
+import {
+  getAuthenticatedVehicles,
+  invalidateVehiclesCache,
+  type Vehicle,
+} from '@/app/lib/api/vehicles';
 
 // Definición de la interfaz del Vehículo
-interface Vehicle {
-  id: number;
-  placa: string;
-  marca: string;
-  modelo: string;
-  color: string;
-  creado_en?: string;
-}
-
 export default function MyVehiclesPage() {
   const [myVehicles, setMyVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,19 +19,15 @@ export default function MyVehiclesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
-  const API_BASE_URL = 'https://software-vehiculos-api.onrender.com/api/v1/vehiculos';
+  const API_BASE_PATH = '/api/v1/vehiculos';
 
   // Función para cargar vehículos desde la API
   const fetchVehiculos = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(API_BASE_URL);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-      const data = await response.json();
-      setMyVehicles(data);
+      const vehicles = await getAuthenticatedVehicles();
+      setMyVehicles(vehicles);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
       console.error('Error al cargar vehículos:', err);
@@ -64,27 +57,31 @@ export default function MyVehiclesPage() {
 
       if (editingVehicle) {
         // Actualizar vehículo
-        const response = await fetch(`${API_BASE_URL}/${editingVehicle.id}`, {
+        const response = await authenticatedFetch(`${API_BASE_PATH}/${editingVehicle.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(vehicleData),
         });
 
-        if (!response.ok) throw new Error(`Error al actualizar: ${response.status}`);
+        if (!response.ok) {
+          throw await readApiError(response, response.status === 404
+            ? 'Vehículo no encontrado o no pertenece al usuario actual.'
+            : 'No se pudo actualizar el vehículo.');
+        }
       } else {
         // Crear nuevo vehículo
-        const response = await fetch(API_BASE_URL, {
+        const response = await authenticatedFetch(API_BASE_PATH, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(vehicleData),
         });
 
         if (!response.ok) {
-          const errorMsg = await response.json();
-          throw new Error(errorMsg.detail || "Error al crear el vehículo");
+          throw await readApiError(response, 'No se pudo crear el vehículo.');
         }
       }
 
+      invalidateVehiclesCache();
       await fetchVehiculos();
       cerrarFormulario();
     } catch (err) {
@@ -97,19 +94,22 @@ const eliminarVehiculo = async (id: number) => {
     if (!confirm("¿Estás seguro de que quieres eliminar este vehículo?")) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
+      const response = await authenticatedFetch(`${API_BASE_PATH}/${id}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        // Si el error es 500 o 400, probablemente es por la llave foránea
+        if (response.status === 404) {
+          throw new Error("Vehículo no encontrado o no pertenece al usuario actual.");
+        }
         if (response.status === 500 || response.status === 409) {
           throw new Error("No puedes borrar este vehículo porque ya tiene cotizaciones o procesos asociados.");
         }
-        throw new Error(`Error al eliminar: ${response.status}`);
+        throw await readApiError(response, "No se pudo eliminar el vehículo.");
       }
 
       // Si todo sale bien, recargamos la lista
+      invalidateVehiclesCache();
       await fetchVehiculos();
       setError(null); // Limpiamos cualquier error previo
     } catch (err) {
