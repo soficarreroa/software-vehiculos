@@ -73,12 +73,32 @@ function authHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function manejarRespuesta<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const detalle = await response.text();
-    console.error(`[${response.status}] Error del backend:`, detalle);
-    throw new Error(ERROR_MESSAGES.LOAD_ERROR);
+function manejarSesionExpirada() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("usuario");
+  localStorage.removeItem("expira_en");
+  window.location.href = "/login";
+}
+
+async function verificarRespuesta(response: Response, mensajeError: string) {
+  if (response.status === 401) {
+    manejarSesionExpirada();
+    throw new Error("Sesión expirada, redirigiendo al login...");
   }
+  if (!response.ok) {
+    const detalle = await response.text().catch(() => "");
+    console.error(`[${response.status}] Error del backend:`, detalle);
+    throw new Error(mensajeError);
+  }
+}
+
+async function manejarRespuesta<T>(
+  response: Response,
+  mensajeError: string = ERROR_MESSAGES.LOAD_ERROR
+): Promise<T> {
+  await verificarRespuesta(response, mensajeError);
   return response.json();
 }
 
@@ -102,8 +122,7 @@ export const adminService = {
       `${API_BASE_URL}/api/v1/admin/talleres/${tallerId}/verificar?verificado=${verificado}`,
       { method: "PATCH", headers: authHeaders() }
     );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return manejarRespuesta<TallerAdmin>(response, ERROR_MESSAGES.ACTION_ERROR);
   },
 
   async getUsuarios(): Promise<UsuarioAdmin[]> {
@@ -122,8 +141,7 @@ export const adminService = {
         body: JSON.stringify({ rol }),
       }
     );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return manejarRespuesta<UsuarioAdmin>(response, ERROR_MESSAGES.ACTION_ERROR);
   },
 
   async cambiarEstadoUsuario(usuarioId: number, activo: boolean): Promise<UsuarioAdmin> {
@@ -135,8 +153,7 @@ export const adminService = {
         body: JSON.stringify({ activo }),
       }
     );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return manejarRespuesta<UsuarioAdmin>(response, ERROR_MESSAGES.ACTION_ERROR);
   },
 
   async getPiezas(): Promise<PiezaAdmin[]> {
@@ -159,8 +176,7 @@ export const adminService = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return manejarRespuesta<CatalogoPrecioAdmin>(response, ERROR_MESSAGES.ACTION_ERROR);
   },
 
   async eliminarPrecioCatalogo(precioId: number): Promise<void> {
@@ -168,6 +184,6 @@ export const adminService = {
       `${API_BASE_URL}/api/v1/admin/catalogo-precios/${precioId}`,
       { method: "DELETE", headers: authHeaders() }
     );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
+    await verificarRespuesta(response, ERROR_MESSAGES.ACTION_ERROR);
   },
 };

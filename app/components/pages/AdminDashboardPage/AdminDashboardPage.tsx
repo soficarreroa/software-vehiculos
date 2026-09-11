@@ -101,30 +101,35 @@ const AdminDashboardPage = () => {
   };
 
   const cargarDatos = async () => {
-    try {
-      setCargando(true);
-      setError(null);
-      const [resumenData, talleresData, usuariosData, piezasData, catalogoData] =
-        await Promise.all([
-          adminService.getResumen(),
-          adminService.getTalleres(),
-          adminService.getUsuarios(),
-          adminService.getPiezas(),
-          adminService.getCatalogoPrecios(),
-        ]);
-      setResumen(resumenData);
-      setTalleres(talleresData);
-      setUsuarios(usuariosData);
-      setPiezas(piezasData);
-      setCatalogoPrecios(catalogoData);
-    } catch (err) {
-      console.error(err);
-      setError(ERROR_MESSAGES.LOAD_ERROR);
-    } finally {
-      setCargando(false);
-    }
-  };
+    setCargando(true);
+    setError(null);
 
+     const resultados = await Promise.allSettled([
+      adminService.getResumen(),
+      adminService.getTalleres(),
+      adminService.getUsuarios(),
+      adminService.getPiezas(),
+      adminService.getCatalogoPrecios(),
+    ]);
+
+    const [resumenR, talleresR, usuariosR, piezasR, catalogoR] = resultados;
+
+    if (resumenR.status === "fulfilled") setResumen(resumenR.value);
+    if (talleresR.status === "fulfilled") setTalleres(talleresR.value);
+    if (usuariosR.status === "fulfilled") setUsuarios(usuariosR.value);
+    if (piezasR.status === "fulfilled") setPiezas(piezasR.value);
+    if (catalogoR.status === "fulfilled") setCatalogoPrecios(catalogoR.value);
+
+    const huboError = resultados.some((r) => r.status === "rejected");
+    if (huboError) {
+      resultados.forEach((r) => {
+        if (r.status === "rejected") console.error(r.reason);
+      });
+      setError(ERROR_MESSAGES.LOAD_ERROR);
+    }
+
+    setCargando(false);
+  };
   useEffect(() => {
     cargarDatos();
   }, []);
