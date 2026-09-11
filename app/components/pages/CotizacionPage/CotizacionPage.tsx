@@ -6,6 +6,8 @@ import Button from '@/app/components/ui/Button/Button';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { authenticatedFetch, readApiError } from '@/app/lib/api/client';
+import { getAuthenticatedVehicles, type Vehicle } from '@/app/lib/api/vehicles';
 
 // Configuración de etiquetas: label (visual), emoji (interfaz), valor (base de datos)
 const ETIQUETAS_DANOS = [
@@ -15,13 +17,6 @@ const ETIQUETAS_DANOS = [
   { label: "Pintura", emoji: "🎨", valor: "Pintura" },
   { label: "Falta pieza", emoji: "🔍", valor: "Falta pieza" }
 ];
-
-interface Vehicle {
-  id: number;
-  marca: string;
-  modelo: string;
-  placa: string;
-}
 
 interface Pieza {
   id: number;
@@ -50,23 +45,42 @@ export default function CotizacionPage() {
   const [items, setItems] = useState<ItemSeleccionado[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "https://software-vehiculos-api.onrender.com/api/v1";
-
   // 1. Cargar vehículos
   useEffect(() => {
-    fetch(`${API_BASE_URL}/vehiculos`)
-      .then(res => res.json())
-      .then(data => setVehicles(data))
-      .catch(err => console.error("Error cargando vehículos:", err));
+    let activo = true;
+    getAuthenticatedVehicles()
+      .then((data: Vehicle[]) => {
+        if (activo) setVehicles(Array.isArray(data) ? data : []);
+      })
+      .catch(err => {
+        if (activo) console.error("Error cargando vehículos:", err);
+      });
+    return () => {
+      activo = false;
+    };
   }, []);
 
   // 2. Cargar piezas por vehículo
   useEffect(() => {
     if (typeof selectedVehicleId === 'number') {
-      fetch(`${API_BASE_URL}/vehiculos/${selectedVehicleId}/piezas-disponibles`)
-        .then(res => res.json())
-        .then(data => setPiezasDisponibles(data))
-        .catch(err => console.error("Error cargando piezas:", err));
+      let activo = true;
+      authenticatedFetch(`/api/v1/vehiculos/${selectedVehicleId}/piezas-disponibles`)
+        .then(async (res) => {
+          if (!res.ok) throw await readApiError(res, 'No se pudieron cargar las piezas disponibles.');
+          return res.json();
+        })
+        .then((data: Pieza[]) => {
+          if (activo) setPiezasDisponibles(Array.isArray(data) ? data : []);
+        })
+        .catch(err => {
+          if (activo) {
+            setPiezasDisponibles([]);
+            console.error("Error cargando piezas:", err);
+          }
+        });
+      return () => {
+        activo = false;
+      };
     } else {
       setPiezasDisponibles([]);
     }
@@ -198,7 +212,7 @@ const enviarCotizacion = async () => {
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}/cotizaciones/completa`, {
+    const response = await authenticatedFetch('/api/v1/cotizaciones/completa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -223,7 +237,15 @@ const enviarCotizacion = async () => {
       // setSelectedVehicleId('Selected'); 
       
     } else {
-      alert("❌ Error al procesar la cotización en el servidor");
+      const apiError = await readApiError(
+        response,
+        response.status === 404
+          ? "El vehículo no existe o no pertenece al usuario actual."
+          : response.status === 422
+            ? "Revisa los datos de la cotización."
+            : "Error al procesar la cotización en el servidor",
+      );
+      alert(`❌ ${apiError.message}`);
     }
   } catch (error) {
     console.error("Error conexión API:", error);

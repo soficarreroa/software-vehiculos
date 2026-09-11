@@ -1,4 +1,5 @@
-import { API_BASE_URL, ERROR_MESSAGES } from "./AdminDashboard.constants";
+import { ERROR_MESSAGES } from "./AdminDashboard.constants";
+import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 
 export interface ResumenAdmin {
   total_usuarios: number;
@@ -67,107 +68,64 @@ export interface NuevoCatalogoPrecio {
   moneda: string;
 }
 
-function authHeaders(): HeadersInit {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 async function manejarRespuesta<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const detalle = await response.text();
-    console.error(`[${response.status}] Error del backend:`, detalle);
-    throw new Error(ERROR_MESSAGES.LOAD_ERROR);
+    throw await readApiError(response, ERROR_MESSAGES.LOAD_ERROR);
+  }
+  return response.json();
+}
+
+async function ejecutarAccion<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    throw await readApiError(response, ERROR_MESSAGES.ACTION_ERROR);
   }
   return response.json();
 }
 
 export const adminService = {
   async getResumen(): Promise<ResumenAdmin> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/resumen`, {
-      headers: authHeaders(),
-    });
-    return manejarRespuesta<ResumenAdmin>(response);
+    return manejarRespuesta(await authenticatedFetch("/api/v1/admin/resumen"));
   },
-
   async getTalleres(): Promise<TallerAdmin[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/talleres`, {
-      headers: authHeaders(),
-    });
-    return manejarRespuesta<TallerAdmin[]>(response);
+    return manejarRespuesta(await authenticatedFetch("/api/v1/admin/talleres"));
   },
-
   async verificarTaller(tallerId: number, verificado: boolean): Promise<TallerAdmin> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/talleres/${tallerId}/verificar?verificado=${verificado}`,
-      { method: "PATCH", headers: authHeaders() }
-    );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return ejecutarAccion(await authenticatedFetch(
+      `/api/v1/admin/talleres/${tallerId}/verificar?verificado=${verificado}`,
+      { method: "PATCH" },
+    ));
   },
-
   async getUsuarios(): Promise<UsuarioAdmin[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/usuarios`, {
-      headers: authHeaders(),
-    });
-    return manejarRespuesta<UsuarioAdmin[]>(response);
+    return manejarRespuesta(await authenticatedFetch("/api/v1/admin/usuarios"));
   },
-
   async cambiarRolUsuario(usuarioId: number, rol: string): Promise<UsuarioAdmin> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/usuarios/${usuarioId}/rol`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ rol }),
-      }
-    );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return ejecutarAccion(await authenticatedFetch(`/api/v1/admin/usuarios/${usuarioId}/rol`, {
+      method: "PATCH",
+      body: JSON.stringify({ rol }),
+    }));
   },
-
   async cambiarEstadoUsuario(usuarioId: number, activo: boolean): Promise<UsuarioAdmin> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/usuarios/${usuarioId}/estado`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ activo }),
-      }
-    );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    return ejecutarAccion(await authenticatedFetch(`/api/v1/admin/usuarios/${usuarioId}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ activo }),
+    }));
   },
-
   async getPiezas(): Promise<PiezaAdmin[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/piezas`, {
-      headers: authHeaders(),
-    });
-    return manejarRespuesta<PiezaAdmin[]>(response);
+    return manejarRespuesta(await authenticatedFetch("/api/v1/admin/piezas"));
   },
-
   async getCatalogoPrecios(): Promise<CatalogoPrecioAdmin[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/catalogo-precios`, {
-      headers: authHeaders(),
-    });
-    return manejarRespuesta<CatalogoPrecioAdmin[]>(response);
+    return manejarRespuesta(await authenticatedFetch("/api/v1/admin/catalogo-precios"));
   },
-
   async crearPrecioCatalogo(payload: NuevoCatalogoPrecio): Promise<CatalogoPrecioAdmin> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/catalogo-precios`, {
+    return ejecutarAccion(await authenticatedFetch("/api/v1/admin/catalogo-precios", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
-    return response.json();
+    }));
   },
-
   async eliminarPrecioCatalogo(precioId: number): Promise<void> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/admin/catalogo-precios/${precioId}`,
-      { method: "DELETE", headers: authHeaders() }
-    );
-    if (!response.ok) throw new Error(ERROR_MESSAGES.ACTION_ERROR);
+    const response = await authenticatedFetch(`/api/v1/admin/catalogo-precios/${precioId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw await readApiError(response, ERROR_MESSAGES.ACTION_ERROR);
   },
 };

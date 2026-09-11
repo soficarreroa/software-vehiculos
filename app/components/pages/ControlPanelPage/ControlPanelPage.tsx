@@ -10,8 +10,8 @@ import styles from "./controlPanelpage.module.css";
 import { controlPanelPageOptions } from "@/lib/constants/controlPanel.constants";
 import { getUsuarioSesion, UsuarioSesion } from "@/app/lib/auth/session";
 import type { Workshop } from "@/app/types/workshop";
+import { authenticatedFetch } from "@/app/lib/api/client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const LIMITE_TALLERES_POR_USUARIO = 2;
 
 const categoriaIconos: Record<string, string> = {
@@ -40,7 +40,7 @@ const ControlPanelPage = () => {
     let activo = true;
     setCargando(true);
 
-    fetch(`${API_BASE_URL}/api/v1/talleres`)
+    authenticatedFetch("/api/v1/talleres")
       .then((res) => res.json())
       .then((data: unknown) => {
         if (!activo) return;
