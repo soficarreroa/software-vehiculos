@@ -7,6 +7,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
   clienteRegisterSchema,
+  BODY_TYPES,
+  SUPPORTED_BRANDS,
+  VEHICLE_COLORS,
+  VEHICLE_MODELS,
   tallerRegisterSchema,
   type ClienteRegisterSchema,
   type TallerRegisterSchema,
@@ -15,6 +19,9 @@ import { registerRequest } from "./Register.service";
 import styles from "./RegisterPage.module.css";
 
 type Role = "cliente" | "taller";
+
+const SPECIALTIES = ["Mecánica general", "Electricidad", "Frenos", "Inyección", "Latonería y pintura", "Aire acondicionado", "Diagnóstico electrónico", "Llantas"];
+type SupportedBrand = typeof SUPPORTED_BRANDS[number];
 
 function ErrorMessage({ message }: { message?: string }) {
   return message ? <span className={styles.errorText}>{message}</span> : null;
@@ -25,7 +32,8 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [brandInput, setBrandInput] = useState("");
+  const [brandSelection, setBrandSelection] = useState<SupportedBrand | "">("");
+  const [specialties, setSpecialties] = useState<string[]>([]);
 
   const clienteForm = useForm<ClienteRegisterSchema>({
     resolver: zodResolver(clienteRegisterSchema),
@@ -42,12 +50,21 @@ export default function RegisterPage() {
   };
 
   const addBrand = () => {
-    const brand = brandInput.trim();
+    const brand = brandSelection;
     if (!brand || tallerForm.getValues("marcas_soportadas").includes(brand)) return;
     tallerForm.setValue("marcas_soportadas", [...tallerForm.getValues("marcas_soportadas"), brand], {
       shouldValidate: true,
+      shouldDirty: true,
     });
-    setBrandInput("");
+    setBrandSelection("");
+  };
+
+  const toggleSpecialty = (specialty: string) => {
+    const next = specialties.includes(specialty)
+      ? specialties.filter((item) => item !== specialty)
+      : [...specialties, specialty];
+    setSpecialties(next);
+    tallerForm.setValue("categoria_especialidad", next.join(", "), { shouldValidate: true, shouldDirty: true });
   };
 
   const removeBrand = (brandToRemove: string) => {
@@ -64,19 +81,23 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     const payload =
-      role === "cliente" && "placa" in data
+      "telefono" in data
         ? {
             ...data,
             placa: data.placa?.trim().toUpperCase() || undefined,
+            telefono: data.telefono.replace(/\D/g, ""),
           }
-        : data;
+        : { ...data, telefono_taller: data.telefono_taller.replace(/\D/g, ""), categoria_especialidad: data.categoria_especialidad };
 
     try {
       const response = await registerRequest(role, payload);
       setSuccessMessage(response.message ?? "Registro completado correctamente.");
       if (role === "cliente") clienteForm.reset();
-      else tallerForm.reset({ marcas_soportadas: [] });
-      setBrandInput("");
+      else {
+        tallerForm.reset({ marcas_soportadas: [], categoria_especialidad: "" });
+        setSpecialties([]);
+      }
+      setBrandSelection("");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Error inesperado al registrar la cuenta.");
     } finally {
@@ -86,7 +107,9 @@ export default function RegisterPage() {
 
   const clienteErrors = clienteForm.formState.errors;
   const tallerErrors = tallerForm.formState.errors;
-  const supportedBrands = useWatch({ control: tallerForm.control, name: "marcas_soportadas" });
+  const supportedBrands = useWatch({ control: tallerForm.control, name: "marcas_soportadas" }) ?? [];
+  const clientePassword = useWatch({ control: clienteForm.control, name: "contrasena" }) ?? "";
+  const tallerPassword = useWatch({ control: tallerForm.control, name: "contrasena" }) ?? "";
 
   return (
     <div className={styles.form}>
@@ -115,10 +138,10 @@ export default function RegisterPage() {
               <Field label="Correo electrónico" id="correo" error={clienteErrors.correo?.message}>
                 <input id="correo" type="email" autoComplete="email" {...clienteForm.register("correo")} />
               </Field>
-              <Field label="Teléfono" id="telefono" error={clienteErrors.telefono?.message}>
-                <input id="telefono" type="tel" autoComplete="tel" {...clienteForm.register("telefono")} />
+              <Field label="Teléfono" id="telefono" hint="Ej. 300 123 4567" error={clienteErrors.telefono?.message}>
+                <input id="telefono" type="tel" inputMode="numeric" autoComplete="tel" maxLength={12} {...clienteForm.register("telefono", { onChange: formatPhoneChange })} />
               </Field>
-              <PasswordFields registerPassword={(name) => clienteForm.register(name)} errors={clienteErrors} />
+              <PasswordFields registerPassword={(name) => clienteForm.register(name)} errors={clienteErrors} password={clientePassword} />
             </div>
           </section>
           <VehicleFields register={clienteForm.register} errors={clienteErrors} />
@@ -138,21 +161,36 @@ export default function RegisterPage() {
               <Field label="Nombre comercial" id="nombre_comercial" error={tallerErrors.nombre_comercial?.message}>
                 <input id="nombre_comercial" {...tallerForm.register("nombre_comercial")} />
               </Field>
-              <Field label="Teléfono del taller" id="telefono_taller" error={tallerErrors.telefono_taller?.message}>
-                <input id="telefono_taller" type="tel" {...tallerForm.register("telefono_taller")} />
+              <Field label="Teléfono del taller" id="telefono_taller" hint="Ej. 300 123 4567" error={tallerErrors.telefono_taller?.message}>
+                <input id="telefono_taller" type="tel" inputMode="numeric" autoComplete="tel" maxLength={12} {...tallerForm.register("telefono_taller", { onChange: formatPhoneChange })} />
               </Field>
-              <Field label="Categoría o especialidad" id="categoria_especialidad" error={tallerErrors.categoria_especialidad?.message}>
-                <input id="categoria_especialidad" {...tallerForm.register("categoria_especialidad")} />
+              <Field label="Especialidades" id="categoria_especialidad" hint="Selecciona una o varias" error={tallerErrors.categoria_especialidad?.message}>
+                <input type="hidden" id="categoria_especialidad" {...tallerForm.register("categoria_especialidad")} />
+                <div className={styles.choiceList} role="group" aria-label="Especialidades">
+                  {SPECIALTIES.map((specialty) => <button type="button" key={specialty} className={specialties.includes(specialty) ? styles.choiceActive : styles.choice} onClick={() => toggleSpecialty(specialty)}>{specialty}</button>)}
+                </div>
               </Field>
               <Field label="Dirección física" id="direccion_fisica" error={tallerErrors.direccion_fisica?.message}>
                 <input id="direccion_fisica" {...tallerForm.register("direccion_fisica")} />
               </Field>
-              <PasswordFields registerPassword={(name) => tallerForm.register(name)} errors={tallerErrors} />
+              <PasswordFields registerPassword={(name) => tallerForm.register(name)} errors={tallerErrors} password={tallerPassword} />
             </div>
             <Field label="Marcas soportadas" id="marca-input" error={tallerErrors.marcas_soportadas?.message}>
               <div className={styles.brandEntry}>
-                <input id="marca-input" value={brandInput} onChange={(event) => setBrandInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addBrand(); } }} placeholder="Ej. Toyota" />
-                <button type="button" onClick={addBrand}>Agregar</button>
+                <select
+                  id="marca-input"
+                  value={brandSelection}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setBrandSelection(SUPPORTED_BRANDS.find((brand) => brand === value) ?? "");
+                  }}
+                >
+                  <option value="">Selecciona una marca</option>
+                  {SUPPORTED_BRANDS.filter((brand) => !supportedBrands.includes(brand)).map((brand) => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={addBrand} disabled={!brandSelection}>Agregar</button>
               </div>
               <div className={styles.tags} aria-live="polite">
                 {supportedBrands.map((brand) => (
@@ -175,30 +213,57 @@ export default function RegisterPage() {
   );
 }
 
-function Field({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {
-  return <div className={styles.field}><label htmlFor={id}>{label}</label>{children}<ErrorMessage message={error} /></div>;
+function Field({ label, id, hint, error, children }: { label: string; id: string; hint?: string; error?: string; children: React.ReactNode }) {
+  return <div className={styles.field}><label htmlFor={id}>{label}</label>{children}{hint && !error ? <span className={styles.hint}>{hint}</span> : null}<ErrorMessage message={error} /></div>;
 }
 
-function PasswordFields({ registerPassword, errors }: {
+function PasswordFields({ registerPassword, errors, password }: {
   registerPassword: (name: "contrasena" | "confirmar_contrasena") => ReturnType<UseFormRegister<ClienteRegisterSchema>>;
   errors: FieldErrors<ClienteRegisterSchema> | FieldErrors<TallerRegisterSchema>;
+  password: string;
 }) {
+  const requirements = [
+    ["8 caracteres", password.length >= 8],
+    ["Una mayúscula", /[A-Z]/.test(password)],
+    ["Una minúscula", /[a-z]/.test(password)],
+    ["Un número", /\d/.test(password)],
+    ["Un carácter especial", /[@$!%*?&]/.test(password)],
+  ] as const;
   return <>
-    <Field label="Contraseña" id="contrasena" error={errors.contrasena?.message ? String(errors.contrasena.message) : undefined}><input id="contrasena" type="password" autoComplete="new-password" {...registerPassword("contrasena")} /></Field>
+    <Field label="Contraseña" id="contrasena" error={errors.contrasena?.message ? String(errors.contrasena.message) : undefined}>
+      <input id="contrasena" type="password" autoComplete="new-password" {...registerPassword("contrasena")} />
+      <ul className={styles.passwordChecklist} aria-label="Requisitos de contraseña">
+        {requirements.map(([label, valid]) => <li key={label} className={valid ? styles.requirementMet : styles.requirementMissing}><span aria-hidden="true">{valid ? "✓" : "○"}</span>{label}</li>)}
+      </ul>
+    </Field>
     <Field label="Confirmar contraseña" id="confirmar_contrasena" error={errors.confirmar_contrasena?.message ? String(errors.confirmar_contrasena.message) : undefined}><input id="confirmar_contrasena" type="password" autoComplete="new-password" {...registerPassword("confirmar_contrasena")} /></Field>
   </>;
 }
 
 function VehicleFields({ register, errors }: { register: UseFormRegister<ClienteRegisterSchema>; errors: FieldErrors<ClienteRegisterSchema> }) {
   return <section className={styles.section}><h2>Datos del vehículo <span>(opcional)</span></h2><p className={styles.hint}>Si completas cualquier campo, la placa será obligatoria.</p><div className={styles.grid}>
-    <Field label="Placa" id="placa" error={errors.placa?.message}><input id="placa" {...register("placa")} /></Field>
-    <Field label="Marca" id="marca" error={errors.marca?.message}><input id="marca" {...register("marca")} /></Field>
-    <Field label="Modelo" id="modelo" error={errors.modelo?.message}><input id="modelo" {...register("modelo")} /></Field>
-    <Field label="Color" id="color" error={errors.color?.message}><input id="color" {...register("color")} /></Field>
-    <Field label="Año de fabricación" id="anio_fabricacion" error={errors.anio_fabricacion?.message}><input id="anio_fabricacion" type="number" min="1900" max="2100" {...register("anio_fabricacion", { setValueAs: (value) => value === "" ? undefined : Number(value) })} /></Field>
-    <Field label="Tipo de carrocería" id="tipo_carroceria" error={errors.tipo_carroceria?.message}><input id="tipo_carroceria" {...register("tipo_carroceria")} /></Field>
+    <Field label="Placa" id="placa" hint="Formato: ABC123 o ABC12D (moto)" error={errors.placa?.message}><input id="placa" placeholder="ABC123" maxLength={6} autoCapitalize="characters" {...register("placa", { setValueAs: (value) => String(value).replace(/[^a-z0-9]/gi, "").toUpperCase() })} /></Field>
+    <SelectField label="Marca" id="marca" options={SUPPORTED_BRANDS} register={register("marca")} error={errors.marca?.message} />
+    <SelectField label="Modelo" id="modelo" options={VEHICLE_MODELS} register={register("modelo")} error={errors.modelo?.message} />
+    <SelectField label="Color" id="color" options={VEHICLE_COLORS} register={register("color")} error={errors.color?.message} />
+    <Field label="Año de fabricación" id="anio_fabricacion" hint={`Entre 1960 y ${new Date().getFullYear() + 1}`} error={errors.anio_fabricacion?.message}><select id="anio_fabricacion" defaultValue="" {...register("anio_fabricacion", { setValueAs: (value) => value === "" ? undefined : Number(value) })}><option value="">Selecciona un año</option>{Array.from({ length: new Date().getFullYear() + 2 - 1960 }, (_, index) => new Date().getFullYear() + 1 - index).map((year) => <option key={year} value={year}>{year}</option>)}</select></Field>
+    <SelectField label="Tipo de carrocería" id="tipo_carroceria" options={BODY_TYPES} register={register("tipo_carroceria")} error={errors.tipo_carroceria?.message} />
     <Field label="Detalles de equipamiento" id="detalles_equipamiento" error={errors.detalles_equipamiento?.message}><textarea id="detalles_equipamiento" rows={3} {...register("detalles_equipamiento")} /></Field>
   </div></section>;
+}
+
+function SelectField({ label, id, options, register, error }: { label: string; id: string; options: readonly string[]; register: ReturnType<UseFormRegister<ClienteRegisterSchema>>; error?: string }) {
+  return <Field label={label} id={id} hint="Selecciona una opción" error={error}>
+    <select id={id} defaultValue="" {...register}>
+      <option value="">Selecciona una opción</option>
+      {options.map((option) => <option key={option} value={option}>{option}</option>)}
+    </select>
+  </Field>;
+}
+
+function formatPhoneChange(event: React.ChangeEvent<HTMLInputElement>) {
+  const digits = event.target.value.replace(/\D/g, "").slice(0, 10);
+  event.target.value = digits.replace(/^(\d{3})(\d{0,3})(\d{0,4}).*/, (_, first, second, third) => [first, second, third].filter(Boolean).join(" "));
 }
 
 function SubmitButton({ isSubmitting, label }: { isSubmitting: boolean; label: string }) {

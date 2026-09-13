@@ -6,6 +6,7 @@ import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
 import { Workshop } from "../../types/workshop";
 import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.module.css";
 import RoleGate from "@/app/lib/auth/RoleGate";
+import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
@@ -31,7 +32,8 @@ export default function Page() {
   useEffect(() => {
     async function fetchTalleres() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/talleres`);
+        const res = await authenticatedFetch("/api/v1/talleres");
+        if (!res.ok) throw await readApiError(res, "No se pudieron cargar los talleres.");
         const data = await res.json();
         setWorkshops(data);
       } catch (error) {
@@ -44,21 +46,27 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    async function fetchMarcas() {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/marcas`);
-        const data = await res.json();
-        const opciones = [
-          { value: "all", label: "Marcas" },
-          ...data.map((marca: string) => ({ value: marca.toLowerCase(), label: marca }))
-        ];
-        setMarcas(opciones);
-      } catch (error) {
-        console.error("Error al cargar marcas:", error);
+  async function fetchMarcas() {
+    try {
+      const res = await authenticatedFetch("/api/v1/marcas");
+      if (!res.ok) throw await readApiError(res, "No se pudieron cargar las marcas.");
+      const data: string[] = await res.json();
+      const vistos = new Set<string>();
+      const opciones = [{ value: "all", label: "Marcas" }];
+      for (const marca of data) {
+        const valor = marca.toLowerCase();
+        if (vistos.has(valor)) continue;
+        vistos.add(valor);
+        opciones.push({ value: valor, label: marca });
       }
+
+      setMarcas(opciones);
+    } catch (error) {
+      console.error("Error al cargar marcas:", error);
     }
-    fetchMarcas();
-  }, []);
+  }
+  fetchMarcas();
+}, []);
 
   const filteredWorkshops = workshops.filter((workshop) => {
     if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
@@ -81,9 +89,8 @@ export default function Page() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/talleres`, {
+      const res = await authenticatedFetch("/api/v1/talleres", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           marcas_soportadas: formData.marcas_soportadas.split(",").map((m) => m.trim()),
@@ -91,6 +98,7 @@ export default function Page() {
           reviews: 0,
         }),
       });
+      if (!res.ok) throw await readApiError(res, "No se pudo crear el taller.");
       const nuevoTaller = await res.json();
       setWorkshops((prev) => [...prev, nuevoTaller]);
       setShowForm(false);

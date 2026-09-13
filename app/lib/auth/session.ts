@@ -10,6 +10,10 @@ export function limpiarSesion() {
   localStorage.removeItem("usuario");
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  localStorage.removeItem("expira_en");
+  localStorage.removeItem("vehiculos");
+  localStorage.removeItem("cotizaciones");
+  localStorage.removeItem("historial");
 }
 
 export function getUsuarioSesion(): UsuarioSesion | null {

@@ -100,17 +100,30 @@ const AdminDashboardPage = () => {
     setSeccionesAbiertas((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
   };
 
+  const NOMBRES_RECURSOS = {
+  resumen: "el resumen general",
+  talleres: "la lista de talleres",
+  usuarios: "la lista de usuarios",
+  piezas: "el catálogo de piezas",
+  catalogo: "el catálogo de precios",
+} as const;
+
+useEffect(() => {
+  let obsoleto = false;
+
   const cargarDatos = async () => {
     setCargando(true);
     setError(null);
 
-     const resultados = await Promise.allSettled([
+    const resultados = await Promise.allSettled([
       adminService.getResumen(),
       adminService.getTalleres(),
       adminService.getUsuarios(),
       adminService.getPiezas(),
       adminService.getCatalogoPrecios(),
     ]);
+
+    if (obsoleto) return; // esta ejecución ya no es la más reciente, no pisar el estado
 
     const [resumenR, talleresR, usuariosR, piezasR, catalogoR] = resultados;
 
@@ -120,19 +133,28 @@ const AdminDashboardPage = () => {
     if (piezasR.status === "fulfilled") setPiezas(piezasR.value);
     if (catalogoR.status === "fulfilled") setCatalogoPrecios(catalogoR.value);
 
-    const huboError = resultados.some((r) => r.status === "rejected");
-    if (huboError) {
+    const claves = ["resumen", "talleres", "usuarios", "piezas", "catalogo"] as const;
+    const fallidos = resultados
+      .map((r, i) => (r.status === "rejected" ? claves[i] : null))
+      .filter((clave): clave is (typeof claves)[number] => clave !== null);
+
+    if (fallidos.length > 0) {
       resultados.forEach((r) => {
         if (r.status === "rejected") console.error(r.reason);
       });
-      setError(ERROR_MESSAGES.LOAD_ERROR);
+      const nombres = fallidos.map((clave) => NOMBRES_RECURSOS[clave]).join(", ");
+      setError(`No se pudo cargar ${nombres}. El resto de la información sí está actualizada.`);
     }
 
     setCargando(false);
   };
-  useEffect(() => {
-    cargarDatos();
-  }, []);
+
+  cargarDatos();
+
+  return () => {
+    obsoleto = true;
+  };
+}, []);
 
   const handleVerificarTaller = async (tallerId: number, verificado: boolean) => {
     setActualizandoTallerId(tallerId);
