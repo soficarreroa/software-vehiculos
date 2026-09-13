@@ -6,7 +6,7 @@ import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
 import { Workshop } from "../../types/workshop";
 import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.module.css";
 import RoleGate from "@/app/lib/auth/RoleGate";
-import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
+import { authenticatedFetch, readApiError, API_BASE_URL } from "@/app/lib/api/client";
 
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
@@ -15,6 +15,10 @@ export default function Page() {
   const [submitting, setSubmitting] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [filterValue, setFilterValue] = useState("all");
+  const [geoMode, setGeoMode] = useState<"idle" | "nearby">("idle");
+  const [nearbyWorkshops, setNearbyWorkshops] = useState<Workshop[]>([]);
+  const [geoCargando, setGeoCargando] = useState(false);
+  const [geoMensaje, setGeoMensaje] = useState("");
   const [marcas, setMarcas] = useState<{value: string, label: string}[]>([
     { value: "all", label: "Marcas" }
   ]);
@@ -68,7 +72,7 @@ export default function Page() {
   fetchMarcas();
 }, []);
 
-  const filteredWorkshops = workshops.filter((workshop) => {
+  const filteredWorkshops = (geoMode === "nearby" ? nearbyWorkshops : workshops).filter((workshop) => {
     if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
 
     const matchesSearch =
@@ -118,6 +122,51 @@ export default function Page() {
     }
   };
 
+  const handleBuscarCercanos = () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setGeoMensaje("Tu navegador no soporta esta función");
+      return;
+    }
+
+    setGeoMensaje("");
+    setGeoCargando(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(
+            `${API_BASE_URL}/api/v1/talleres/cercanos?lat=${latitude}&lng=${longitude}`
+          );
+          if (!res.ok) throw new Error("Error al obtener talleres cercanos.");
+          const data: Workshop[] = await res.json();
+          setNearbyWorkshops(data);
+          setGeoMode("nearby");
+        } catch (error) {
+          console.error("Error al obtener talleres cercanos:", error);
+          setGeoMensaje(
+            "No pudimos acceder a tu ubicación. Puedes seguir buscando por nombre o ciudad."
+          );
+        } finally {
+          setGeoCargando(false);
+        }
+      },
+      (error) => {
+        console.error("Error de geolocalización:", error.code, error.message);
+        setGeoCargando(false);
+        setGeoMensaje(
+          "No pudimos acceder a tu ubicación. Puedes seguir buscando por nombre o ciudad."
+        );
+      }
+    );
+  };
+
+  const handleVolverVistaNormal = () => {
+    setGeoMode("idle");
+    setNearbyWorkshops([]);
+    setGeoMensaje("");
+  };
+
   return (
     <main className={styles.main}>
       <div className={styles.headerMain}>
@@ -136,6 +185,22 @@ export default function Page() {
         </div>
       </RoleGate>
 
+      <div className={styles.nearbyRow}>
+        <button
+          className={styles.nearbyButton}
+          onClick={handleBuscarCercanos}
+          disabled={geoCargando}
+        >
+          {geoCargando ? "Obteniendo tu ubicación..." : "📍 Ver talleres cerca de mí"}
+        </button>
+        {geoMode === "nearby" && (
+          <button className={styles.nearbyBackButton} onClick={handleVolverVistaNormal}>
+            Volver a la vista normal
+          </button>
+        )}
+      </div>
+      {geoMensaje && <p className={styles.geoMessage}>{geoMensaje}</p>}
+
       <SearchBar onSearch={setSearchValue} onFilterChange={setFilterValue} options={marcas} />
 
       {loading ? (
@@ -150,6 +215,7 @@ export default function Page() {
               direccion={workshop.direccion}
               rating={workshop.rating}
               reviews={workshop.reviews}
+              distanciaKm={workshop.distancia_km}
             />
           ))}
         </div>
