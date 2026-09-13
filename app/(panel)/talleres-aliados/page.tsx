@@ -46,22 +46,27 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    async function fetchMarcas() {
-      try {
-        const res = await authenticatedFetch("/api/v1/marcas");
-        if (!res.ok) throw await readApiError(res, "No se pudieron cargar las marcas.");
-        const data = await res.json();
-        const opciones = [
-          { value: "all", label: "Marcas" },
-          ...data.map((marca: string) => ({ value: marca.toLowerCase(), label: marca }))
-        ];
-        setMarcas(opciones);
-      } catch (error) {
-        console.error("Error al cargar marcas:", error);
+  async function fetchMarcas() {
+    try {
+      const res = await authenticatedFetch("/api/v1/marcas");
+      if (!res.ok) throw await readApiError(res, "No se pudieron cargar las marcas.");
+      const data: string[] = await res.json();
+      const vistos = new Set<string>();
+      const opciones = [{ value: "all", label: "Marcas" }];
+      for (const marca of data) {
+        const valor = marca.toLowerCase();
+        if (vistos.has(valor)) continue;
+        vistos.add(valor);
+        opciones.push({ value: valor, label: marca });
       }
+
+      setMarcas(opciones);
+    } catch (error) {
+      console.error("Error al cargar marcas:", error);
     }
-    fetchMarcas();
-  }, []);
+  }
+  fetchMarcas();
+}, []);
 
   const filteredWorkshops = workshops.filter((workshop) => {
     if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
