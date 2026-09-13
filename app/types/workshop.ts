@@ -15,4 +15,5 @@ export interface Workshop {
   categoria: string;
   rating: number;
   reviews: number;
+  distancia_km?: number;
 }
