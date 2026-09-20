@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCard";
 import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
 import GeoEstado from "../../components/pages/TalleresAliadosPage/GeoEstado";
@@ -25,6 +26,14 @@ import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.m
 import RoleGate from "@/app/lib/auth/RoleGate";
 import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 
+const WorkshopMap = dynamic(
+  () => import("../../components/pages/TalleresAliadosPage/WorkshopMap"),
+  {
+    ssr: false,
+    loading: () => <div className={styles.mapLoading}>Cargando mapa...</div>,
+  }
+);
+
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +43,7 @@ export default function Page() {
   const [filterValue, setFilterValue] = useState("all");
   const [geoMode, setGeoMode] = useState<"idle" | "nearby">("idle");
   const [nearbyWorkshops, setNearbyWorkshops] = useState<Workshop[]>([]);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [marcas, setMarcas] = useState<{ value: string; label: string }[]>([
     { value: "all", label: "Marcas" },
   ]);
@@ -182,6 +192,7 @@ export default function Page() {
       const { latitude, longitude } = await talleresCercanosService.obtenerUbicacion();
       const cercanos = await talleresCercanosService.buscarCercanos(latitude, longitude);
 
+      setUserCoords({ lat: latitude, lng: longitude });
       setNearbyWorkshops(cercanos);
       setGeoMode("nearby");
       setEstadoGeo(
@@ -195,6 +206,7 @@ export default function Page() {
       // completa solo porque falló la parte de geolocalización.
       setNearbyWorkshops([]);
       setGeoMode("idle");
+      setUserCoords(null);
       setEstadoGeo({ tipo: "error", causa });
     }
   };
@@ -202,6 +214,7 @@ export default function Page() {
   const handleVolverVistaNormal = () => {
     setGeoMode("idle");
     setNearbyWorkshops([]);
+    setUserCoords(null);
     setEstadoGeo({ tipo: "inactivo" });
   };
 
@@ -230,7 +243,6 @@ export default function Page() {
     if (errorCarga) return reintentarCarga;
     return handleBuscarCercanos;
   })();
-
   return (
     <main className={styles.main}>
       <div className={styles.headerMain}>
@@ -283,18 +295,25 @@ export default function Page() {
       ) : claveEstado ? (
         <GeoEstado clave={claveEstado} onAccion={accionEstado} />
       ) : (
-        <div className={styles.gridWorkshops}>
-          {filteredWorkshops.map((workshop) => (
-            <WorkshopCard
-              key={workshop.id}
-              nombre={workshop.nombre}
-              category={workshop.categoria}
-              direccion={workshop.direccion}
-              rating={workshop.rating}
-              reviews={workshop.reviews}
-              distanciaKm={workshop.distancia_km}
-            />
-          ))}
+        <div className={styles.workshopsLayout}>
+          <div className={styles.listColumn}>
+            <div className={styles.gridWorkshops}>
+              {filteredWorkshops.map((workshop) => (
+                <WorkshopCard
+                  key={workshop.id}
+                  nombre={workshop.nombre}
+                  category={workshop.categoria}
+                  direccion={workshop.direccion}
+                  rating={workshop.rating}
+                  reviews={workshop.reviews}
+                  distanciaKm={workshop.distancia_km}
+                />
+              ))}
+            </div>
+          </div>
+          <div className={styles.mapColumn}>
+            <WorkshopMap workshops={filteredWorkshops} userCoords={userCoords} />
+          </div>
         </div>
       )}
 
