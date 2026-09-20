@@ -15,14 +15,25 @@ const DEFAULT_ZOOM = 12;
 const SINGLE_WORKSHOP_ZOOM = 14;
 const USER_COORDS_ZOOM = 13;
 
-const DEFAULT_MARKER_ICON = L.icon({
-  iconUrl: markerIconUrl.src,
-  iconRetinaUrl: markerIcon2xUrl.src,
-  shadowUrl: markerShadowUrl.src,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+/**
+ * Webpack/Turbopack pueden entregar el import de imagen como
+ * StaticImageData (objeto con .src) o directamente como string con la
+ * URL. El marcador de Leaflet necesita la URL final, así que se
+ * normaliza a string en ambos casos.
+ */
+function urlDeImagen(mod: string | { src: string }): string {
+  return typeof mod === "string" ? mod : mod.src;
+}
+
+// Los marcadores usan el icono por defecto de Leaflet, cuya URL apunta a
+// rutas que no existen cuando la app se agrupa con un bundler moderno.
+// Se reemplaza por las imágenes del propio paquete: se borra el detector
+// por defecto y se fuerzan las URLs.
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: urlDeImagen(markerIcon2xUrl),
+  iconUrl: urlDeImagen(markerIconUrl),
+  shadowUrl: urlDeImagen(markerShadowUrl),
 });
 
 interface UserCoords {
@@ -83,14 +94,17 @@ export default function WorkshopMap({ workshops, userCoords }: WorkshopMapProps)
         scrollWheelZoom
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+        />
+        <TileLayer
+          attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
         />
         {validWorkshops.map((workshop) => (
           <Marker
             key={workshop.id}
             position={[workshop.lat, workshop.lng]}
-            icon={DEFAULT_MARKER_ICON}
           >
             <Popup>
               <span className={styles.popupCategory}>{workshop.categoria}</span>

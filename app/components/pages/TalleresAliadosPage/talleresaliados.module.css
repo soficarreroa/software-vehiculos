@@ -490,3 +490,32 @@
     width: auto;
   }
 }
+
+/* --- Estados vacíos y de error (casos límite) --- */
+
+.emptyActions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.retryButton {
+  background: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retryButton:hover {
+  background: var(--primary-color-dark, #0056b3);
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}

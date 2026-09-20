@@ -4,10 +4,27 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCard";
 import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
+import GeoEstado from "../../components/pages/TalleresAliadosPage/GeoEstado";
+import { useEstadoConexion } from "../../components/pages/TalleresAliadosPage/useEstadoConexion";
+import {
+  talleresCercanosService,
+  GeoError,
+} from "../../components/pages/TalleresAliadosPage/TalleresAliados.service";
+import {
+  CausaError,
+  ClaveMensaje,
+  EstadoGeo,
+  TEXTO_BANNER_OFFLINE,
+  TEXTO_BOTON_CERCANOS,
+  TEXTO_BOTON_CERCANOS_CARGANDO,
+  TEXTO_BOTON_VOLVER,
+  TEXTO_CARGANDO_TALLERES,
+} from "../../components/pages/TalleresAliadosPage/TalleresAliados.constants";
+import Info from "../../components/ui/Info/Info";
 import { Workshop } from "../../types/workshop";
 import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.module.css";
 import RoleGate from "@/app/lib/auth/RoleGate";
-import { authenticatedFetch, readApiError, API_BASE_URL } from "@/app/lib/api/client";
+import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 
 const WorkshopMap = dynamic(
   () => import("../../components/pages/TalleresAliadosPage/WorkshopMap"),
@@ -27,10 +44,8 @@ export default function Page() {
   const [geoMode, setGeoMode] = useState<"idle" | "nearby">("idle");
   const [nearbyWorkshops, setNearbyWorkshops] = useState<Workshop[]>([]);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [geoCargando, setGeoCargando] = useState(false);
-  const [geoMensaje, setGeoMensaje] = useState("");
-  const [marcas, setMarcas] = useState<{value: string, label: string}[]>([
-    { value: "all", label: "Marcas" }
+  const [marcas, setMarcas] = useState<{ value: string; label: string }[]>([
+    { value: "all", label: "Marcas" },
   ]);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -42,47 +57,85 @@ export default function Page() {
     certificado: false,
   });
 
+  // --- Casos límite ---------------------------------------------------
+  const [estadoGeo, setEstadoGeo] = useState<EstadoGeo>({ tipo: "inactivo" });
+  const [errorCarga, setErrorCarga] = useState<CausaError | null>(null);
+  const [recargas, setRecargas] = useState(0);
+  const enLinea = useEstadoConexion();
+  const geoCargando = estadoGeo.tipo === "cargando";
+  // --------------------------------------------------------------------
+
   // Esta carga de talleres es IGUAL para los tres roles. No depende del usuario.
   useEffect(() => {
-    async function fetchTalleres() {
+    let cancelado = false;
+
+    async function cargarTalleres() {
       try {
         const res = await authenticatedFetch("/api/v1/talleres");
         if (!res.ok) throw await readApiError(res, "No se pudieron cargar los talleres.");
         const data = await res.json();
-        setWorkshops(data);
+        if (cancelado) return;
+        setWorkshops(Array.isArray(data) ? data : []);
+        setErrorCarga(null);
       } catch (error) {
         console.error("Error al cargar talleres:", error);
+        if (cancelado) return;
+        // Sin red del navegador = offline; con red = la API no respondió.
+        setErrorCarga(navigator.onLine === false ? "sin-conexion" : "servidor");
       } finally {
-        setLoading(false);
+        if (!cancelado) setLoading(false);
       }
     }
-    fetchTalleres();
-  }, []);
+
+    cargarTalleres();
+    return () => {
+      cancelado = true;
+    };
+  }, [recargas]);
+
+  /** Reintento manual desde el estado de error. */
+  const reintentarCarga = () => {
+    setLoading(true);
+    setErrorCarga(null);
+    setRecargas((n) => n + 1);
+  };
+
+  // Si la carga falló por falta de red, se reintenta sola en cuanto vuelve.
+  useEffect(() => {
+    if (errorCarga !== "sin-conexion") return;
+    const alRecuperarRed = () => setRecargas((n) => n + 1);
+    window.addEventListener("online", alRecuperarRed);
+    return () => window.removeEventListener("online", alRecuperarRed);
+  }, [errorCarga]);
 
   useEffect(() => {
-  async function fetchMarcas() {
-    try {
-      const res = await authenticatedFetch("/api/v1/marcas");
-      if (!res.ok) throw await readApiError(res, "No se pudieron cargar las marcas.");
-      const data: string[] = await res.json();
-      const vistos = new Set<string>();
-      const opciones = [{ value: "all", label: "Marcas" }];
-      for (const marca of data) {
-        const valor = marca.toLowerCase();
-        if (vistos.has(valor)) continue;
-        vistos.add(valor);
-        opciones.push({ value: valor, label: marca });
+    async function fetchMarcas() {
+      try {
+        const res = await authenticatedFetch("/api/v1/marcas");
+        if (!res.ok) throw await readApiError(res, "No se pudieron cargar las marcas.");
+        const data: string[] = await res.json();
+        const vistos = new Set<string>();
+        const opciones = [{ value: "all", label: "Marcas" }];
+        for (const marca of data) {
+          const valor = marca.toLowerCase();
+          if (vistos.has(valor)) continue;
+          vistos.add(valor);
+          opciones.push({ value: valor, label: marca });
+        }
+
+        setMarcas(opciones);
+      } catch (error) {
+        // El filtro de marcas es secundario: si falla, la página sigue
+        // funcionando con la opción "Marcas" por defecto.
+        console.error("Error al cargar marcas:", error);
       }
-
-      setMarcas(opciones);
-    } catch (error) {
-      console.error("Error al cargar marcas:", error);
     }
-  }
-  fetchMarcas();
-}, []);
+    fetchMarcas();
+  }, []);
 
-  const filteredWorkshops = (geoMode === "nearby" ? nearbyWorkshops : workshops).filter((workshop) => {
+  const baseWorkshops = geoMode === "nearby" ? nearbyWorkshops : workshops;
+
+  const filteredWorkshops = baseWorkshops.filter((workshop) => {
     if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
 
     const matchesSearch =
@@ -132,53 +185,64 @@ export default function Page() {
     }
   };
 
-  const handleBuscarCercanos = () => {
-    if (typeof window === "undefined" || !("geolocation" in navigator)) {
-      setGeoMensaje("Tu navegador no soporta esta función");
-      return;
+  const handleBuscarCercanos = async () => {
+    setEstadoGeo({ tipo: "cargando" });
+
+    try {
+      const { latitude, longitude } = await talleresCercanosService.obtenerUbicacion();
+      const cercanos = await talleresCercanosService.buscarCercanos(latitude, longitude);
+
+      setUserCoords({ lat: latitude, lng: longitude });
+      setNearbyWorkshops(cercanos);
+      setGeoMode("nearby");
+      setEstadoGeo(
+        cercanos.length === 0 ? { tipo: "sin-resultados" } : { tipo: "con-resultados" }
+      );
+    } catch (error) {
+      const causa: CausaError = error instanceof GeoError ? error.causa : "desconocido";
+      console.error("Talleres cercanos:", causa, error);
+
+      // Se mantiene la vista normal: el usuario no pierde la lista
+      // completa solo porque falló la parte de geolocalización.
+      setNearbyWorkshops([]);
+      setGeoMode("idle");
+      setUserCoords(null);
+      setEstadoGeo({ tipo: "error", causa });
     }
-
-    setGeoMensaje("");
-    setGeoCargando(true);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(
-            `${API_BASE_URL}/api/v1/talleres/cercanos?lat=${latitude}&lng=${longitude}`
-          );
-          if (!res.ok) throw new Error("Error al obtener talleres cercanos.");
-          const data: Workshop[] = await res.json();
-          setNearbyWorkshops(data);
-          setUserCoords({ lat: latitude, lng: longitude });
-          setGeoMode("nearby");
-        } catch (error) {
-          console.error("Error al obtener talleres cercanos:", error);
-          setGeoMensaje(
-            "No pudimos acceder a tu ubicación. Puedes seguir buscando por nombre o ciudad."
-          );
-        } finally {
-          setGeoCargando(false);
-        }
-      },
-      (error) => {
-        console.error("Error de geolocalización:", error.code, error.message);
-        setGeoCargando(false);
-        setGeoMensaje(
-          "No pudimos acceder a tu ubicación. Puedes seguir buscando por nombre o ciudad."
-        );
-      }
-    );
   };
 
   const handleVolverVistaNormal = () => {
     setGeoMode("idle");
     setNearbyWorkshops([]);
     setUserCoords(null);
-    setGeoMensaje("");
+    setEstadoGeo({ tipo: "inactivo" });
   };
 
+  const handleLimpiarFiltros = () => {
+    setSearchValue("");
+    setFilterValue("all");
+  };
+
+  /**
+   * Decide qué se muestra en la zona de resultados. Solo una cosa a la
+   * vez, y siempre la más específica primero.
+   */
+  const claveEstado: ClaveMensaje | null = (() => {
+    if (loading || geoCargando) return null;
+    if (errorCarga) return errorCarga;
+    if (estadoGeo.tipo === "error") return estadoGeo.causa;
+    if (estadoGeo.tipo === "sin-resultados") return "sin-resultados";
+    if (baseWorkshops.length === 0) return "sin-talleres";
+    if (filteredWorkshops.length === 0) return "sin-coincidencias";
+    return null;
+  })();
+
+  const accionEstado = (() => {
+    if (claveEstado === "sin-coincidencias") return handleLimpiarFiltros;
+    if (claveEstado === "sin-resultados") return handleVolverVistaNormal;
+    if (errorCarga) return reintentarCarga;
+    return handleBuscarCercanos;
+  })();
   return (
     <main className={styles.main}>
       <div className={styles.headerMain}>
@@ -187,6 +251,9 @@ export default function Page() {
           Encuentra centros de reparación certificados cerca de ti.
         </p>
       </div>
+
+      {/* Caso B: aviso permanente mientras no haya red. */}
+      {!enLinea && <Info severity="warning">{TEXTO_BANNER_OFFLINE}</Info>}
 
       {/* SOLO el botón depende del rol. Todo lo demás es igual para los tres. */}
       <RoleGate excludeRoles={["cliente"]}>
@@ -201,22 +268,32 @@ export default function Page() {
         <button
           className={styles.nearbyButton}
           onClick={handleBuscarCercanos}
-          disabled={geoCargando}
+          disabled={geoCargando || !enLinea}
+          title={!enLinea ? "Necesitas conexión a internet para buscar talleres cercanos" : undefined}
         >
-          {geoCargando ? "Obteniendo tu ubicación..." : "📍 Ver talleres cerca de mí"}
+          {geoCargando ? TEXTO_BOTON_CERCANOS_CARGANDO : TEXTO_BOTON_CERCANOS}
         </button>
         {geoMode === "nearby" && (
           <button className={styles.nearbyBackButton} onClick={handleVolverVistaNormal}>
-            Volver a la vista normal
+            {TEXTO_BOTON_VOLVER}
           </button>
         )}
       </div>
-      {geoMensaje && <p className={styles.geoMessage}>{geoMensaje}</p>}
 
-      <SearchBar onSearch={setSearchValue} onFilterChange={setFilterValue} options={marcas} />
+      <SearchBar
+        onSearch={setSearchValue}
+        onFilterChange={setFilterValue}
+        options={marcas}
+        searchValue={searchValue}
+        filterValue={filterValue}
+      />
 
-      {loading ? (
-        <p>Cargando talleres...</p>
+      {loading || geoCargando ? (
+        <p role="status" aria-live="polite">
+          {geoCargando ? TEXTO_BOTON_CERCANOS_CARGANDO : TEXTO_CARGANDO_TALLERES}
+        </p>
+      ) : claveEstado ? (
+        <GeoEstado clave={claveEstado} onAccion={accionEstado} />
       ) : (
         <div className={styles.workshopsLayout}>
           <div className={styles.listColumn}>
