@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCard";
 import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
 import { Workshop } from "../../types/workshop";
 import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.module.css";
 import RoleGate from "@/app/lib/auth/RoleGate";
 import { authenticatedFetch, readApiError, API_BASE_URL } from "@/app/lib/api/client";
+
+const WorkshopMap = dynamic(
+  () => import("../../components/pages/TalleresAliadosPage/WorkshopMap"),
+  {
+    ssr: false,
+    loading: () => <div className={styles.mapLoading}>Cargando mapa...</div>,
+  }
+);
 
 export default function Page() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
@@ -17,6 +26,7 @@ export default function Page() {
   const [filterValue, setFilterValue] = useState("all");
   const [geoMode, setGeoMode] = useState<"idle" | "nearby">("idle");
   const [nearbyWorkshops, setNearbyWorkshops] = useState<Workshop[]>([]);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoCargando, setGeoCargando] = useState(false);
   const [geoMensaje, setGeoMensaje] = useState("");
   const [marcas, setMarcas] = useState<{value: string, label: string}[]>([
@@ -141,6 +151,7 @@ export default function Page() {
           if (!res.ok) throw new Error("Error al obtener talleres cercanos.");
           const data: Workshop[] = await res.json();
           setNearbyWorkshops(data);
+          setUserCoords({ lat: latitude, lng: longitude });
           setGeoMode("nearby");
         } catch (error) {
           console.error("Error al obtener talleres cercanos:", error);
@@ -164,6 +175,7 @@ export default function Page() {
   const handleVolverVistaNormal = () => {
     setGeoMode("idle");
     setNearbyWorkshops([]);
+    setUserCoords(null);
     setGeoMensaje("");
   };
 
@@ -206,18 +218,25 @@ export default function Page() {
       {loading ? (
         <p>Cargando talleres...</p>
       ) : (
-        <div className={styles.gridWorkshops}>
-          {filteredWorkshops.map((workshop) => (
-            <WorkshopCard
-              key={workshop.id}
-              nombre={workshop.nombre}
-              category={workshop.categoria}
-              direccion={workshop.direccion}
-              rating={workshop.rating}
-              reviews={workshop.reviews}
-              distanciaKm={workshop.distancia_km}
-            />
-          ))}
+        <div className={styles.workshopsLayout}>
+          <div className={styles.listColumn}>
+            <div className={styles.gridWorkshops}>
+              {filteredWorkshops.map((workshop) => (
+                <WorkshopCard
+                  key={workshop.id}
+                  nombre={workshop.nombre}
+                  category={workshop.categoria}
+                  direccion={workshop.direccion}
+                  rating={workshop.rating}
+                  reviews={workshop.reviews}
+                  distanciaKm={workshop.distancia_km}
+                />
+              ))}
+            </div>
+          </div>
+          <div className={styles.mapColumn}>
+            <WorkshopMap workshops={filteredWorkshops} userCoords={userCoords} />
+          </div>
         </div>
       )}
 

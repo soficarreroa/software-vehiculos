@@ -48,6 +48,30 @@
   width: 100%;
 }
 
+.workshopsLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 25px;
+  width: 100%;
+}
+
+.listColumn,
+.mapColumn {
+  min-width: 0;
+}
+
+.mapLoading {
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  min-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
 .workshopCard {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -158,6 +182,20 @@
 
   .title {
     font-size: 1.8rem;
+  }
+
+  .workshopsLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .mapColumn {
+    position: sticky;
+    top: 20px;
+  }
+
+  .mapLoading {
+    min-height: 520px;
   }
 }
 
