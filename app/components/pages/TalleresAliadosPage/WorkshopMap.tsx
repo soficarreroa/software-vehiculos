@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Workshop } from "@/app/types/workshop";
+import { TEXTO_POPUP_ESTOY_AQUI } from "./TalleresAliados.constants";
 import styles from "./workshopMap.module.css";
 import markerIcon2xUrl from "leaflet/dist/images/marker-icon-2x.png";
 import markerIconUrl from "leaflet/dist/images/marker-icon.png";
@@ -44,6 +45,25 @@ interface UserCoords {
 interface WorkshopMapProps {
   workshops: Workshop[];
   userCoords?: UserCoords | null;
+  /** Posición en vivo del usuario (watchPosition), independiente de userCoords. */
+  posicionEnVivo?: UserCoords | null;
+}
+
+/**
+ * Ícono propio para la posición en vivo del usuario: un punto azul con un
+ * halo animado, igual al "estás aquí" de los mapas habituales. Se arma
+ * con CSS (workshopMap.module.css) en vez de una imagen, para no sumar
+ * otro asset de Leaflet.
+ */
+function crearIconoUsuario() {
+  return L.divIcon({
+    // Sin esta clase, Leaflet le pone a .leaflet-div-icon un fondo blanco
+    // y un borde por defecto que taparían el punto y el halo de abajo.
+    className: styles.userMarker,
+    html: `<span class="${styles.userDotPulse}"></span><span class="${styles.userDot}"></span>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
 }
 
 function FitMap({ workshops, userCoords }: { workshops: Workshop[]; userCoords?: UserCoords | null }) {
@@ -72,7 +92,7 @@ function FitMap({ workshops, userCoords }: { workshops: Workshop[]; userCoords?:
   return null;
 }
 
-export default function WorkshopMap({ workshops, userCoords }: WorkshopMapProps) {
+export default function WorkshopMap({ workshops, userCoords, posicionEnVivo }: WorkshopMapProps) {
   const validWorkshops = useMemo(
     () =>
       workshops.filter(
@@ -84,6 +104,8 @@ export default function WorkshopMap({ workshops, userCoords }: WorkshopMapProps)
       ),
     [workshops]
   );
+
+  const iconoUsuario = useMemo(() => crearIconoUsuario(), []);
 
   return (
     <div className={styles.mapWrapper}>
@@ -113,6 +135,15 @@ export default function WorkshopMap({ workshops, userCoords }: WorkshopMapProps)
             </Popup>
           </Marker>
         ))}
+        {posicionEnVivo && (
+          <Marker
+            position={[posicionEnVivo.lat, posicionEnVivo.lng]}
+            icon={iconoUsuario}
+            zIndexOffset={1000}
+          >
+            <Popup>{TEXTO_POPUP_ESTOY_AQUI}</Popup>
+          </Marker>
+        )}
         <FitMap workshops={validWorkshops} userCoords={userCoords} />
       </MapContainer>
     </div>

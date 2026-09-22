@@ -48,3 +48,42 @@
     height: 520px;
   }
 }
+/* --- Marcador de ubicación en vivo del usuario --- */
+
+.userMarker {
+  background: transparent;
+  border: none;
+}
+
+.userDot,
+.userDotPulse {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.userDot {
+  background: var(--primary-color);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.userDotPulse {
+  background: var(--primary-color);
+  opacity: 0.55;
+  animation: userDotPulse 1.8s ease-out infinite;
+}
+
+@keyframes userDotPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}

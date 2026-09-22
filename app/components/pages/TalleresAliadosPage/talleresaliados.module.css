@@ -519,3 +519,42 @@
   outline: 2px solid var(--primary-color);
   outline-offset: 3px;
 }
+/* --- Botón flotante de ubicación en vivo (sobre el mapa) --- */
+
+.mapOverlayWrapper {
+  position: relative;
+}
+
+.locateButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.locateButton:hover {
+  transform: scale(1.06);
+}
+
+.locateButtonActive {
+  background: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+}
+
+.mapNotice {
+  margin-top: 12px;
+}

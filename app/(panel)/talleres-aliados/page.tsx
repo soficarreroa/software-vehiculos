@@ -6,6 +6,7 @@ import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCar
 import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
 import GeoEstado from "../../components/pages/TalleresAliadosPage/GeoEstado";
 import { useEstadoConexion } from "../../components/pages/TalleresAliadosPage/useEstadoConexion";
+import { useUbicacionEnVivo } from "../../components/pages/TalleresAliadosPage/useUbicacionEnVivo";
 import {
   talleresCercanosService,
   GeoError,
@@ -14,9 +15,12 @@ import {
   CausaError,
   ClaveMensaje,
   EstadoGeo,
+  MENSAJES_ESTADO,
   TEXTO_BANNER_OFFLINE,
   TEXTO_BOTON_CERCANOS,
   TEXTO_BOTON_CERCANOS_CARGANDO,
+  TEXTO_BOTON_UBICACION_APAGAR,
+  TEXTO_BOTON_UBICACION_ENCENDER,
   TEXTO_BOTON_VOLVER,
   TEXTO_CARGANDO_TALLERES,
 } from "../../components/pages/TalleresAliadosPage/TalleresAliados.constants";
@@ -63,6 +67,12 @@ export default function Page() {
   const [recargas, setRecargas] = useState(0);
   const enLinea = useEstadoConexion();
   const geoCargando = estadoGeo.tipo === "cargando";
+  const {
+    posicion: posicionEnVivo,
+    activo: ubicacionEnVivoActiva,
+    causaError: errorUbicacionEnVivo,
+    alternar: alternarUbicacionEnVivo,
+  } = useUbicacionEnVivo();
   // --------------------------------------------------------------------
 
   // Esta carga de talleres es IGUAL para los tres roles. No depende del usuario.
@@ -312,7 +322,35 @@ export default function Page() {
             </div>
           </div>
           <div className={styles.mapColumn}>
-            <WorkshopMap workshops={filteredWorkshops} userCoords={userCoords} />
+            <div className={styles.mapOverlayWrapper}>
+              <WorkshopMap
+                workshops={filteredWorkshops}
+                userCoords={userCoords}
+                posicionEnVivo={posicionEnVivo}
+              />
+              <button
+                type="button"
+                className={`${styles.locateButton} ${
+                  ubicacionEnVivoActiva ? styles.locateButtonActive : ""
+                }`}
+                onClick={alternarUbicacionEnVivo}
+                aria-pressed={ubicacionEnVivoActiva}
+                title={
+                  ubicacionEnVivoActiva
+                    ? TEXTO_BOTON_UBICACION_APAGAR
+                    : TEXTO_BOTON_UBICACION_ENCENDER
+                }
+              >
+                📍
+              </button>
+            </div>
+            {errorUbicacionEnVivo && (
+              <div className={styles.mapNotice}>
+                <Info severity="warning">
+                  {MENSAJES_ESTADO[errorUbicacionEnVivo as ClaveMensaje].texto}
+                </Info>
+              </div>
+            )}
           </div>
         </div>
       )}
