@@ -1,5 +1,3 @@
-// app/components/pages/TalleresAliadosPage/TalleresAliados.service.ts
-
 import { API_BASE_URL } from "@/app/lib/api/client";
 import { Workshop } from "@/app/types/workshop";
 import {
@@ -28,13 +26,32 @@ function estaOffline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
+/**
+ * Traduce un GeolocationPositionError del navegador a una causa propia.
+ * Códigos del estándar: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE,
+ * 3 = TIMEOUT. La usan tanto obtenerUbicacion() (una sola lectura) como
+ * useUbicacionEnVivo (watchPosition), para que ambos flujos expliquen
+ * el mismo error con el mismo texto.
+ */
+export function mapearErrorGeolocalizacion(
+  error: GeolocationPositionError,
+): CausaError {
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      return "permiso-denegado";
+    case error.POSITION_UNAVAILABLE:
+      return "ubicacion-no-disponible";
+    case error.TIMEOUT:
+      return "tiempo-agotado";
+    default:
+      return "desconocido";
+  }
+}
+
 export const talleresCercanosService = {
   /**
    * Envuelve getCurrentPosition en una promesa y traduce cada código de
    * error del navegador a una causa propia.
-   *
-   * Códigos del estándar: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE,
-   * 3 = TIMEOUT.
    */
   obtenerUbicacion(): Promise<GeolocationCoordinates> {
     return new Promise((resolve, reject) => {
@@ -53,21 +70,7 @@ export const talleresCercanosService = {
 
       navigator.geolocation.getCurrentPosition(
         (posicion) => resolve(posicion.coords),
-        (error) => {
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              reject(new GeoError("permiso-denegado", error.message));
-              break;
-            case error.POSITION_UNAVAILABLE:
-              reject(new GeoError("ubicacion-no-disponible", error.message));
-              break;
-            case error.TIMEOUT:
-              reject(new GeoError("tiempo-agotado", error.message));
-              break;
-            default:
-              reject(new GeoError("desconocido", error.message));
-          }
-        },
+        (error) => reject(new GeoError(mapearErrorGeolocalizacion(error), error.message)),
         OPCIONES_GEOLOCALIZACION,
       );
     });

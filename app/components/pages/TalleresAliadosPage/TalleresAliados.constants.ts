@@ -18,6 +18,18 @@ export const OPCIONES_GEOLOCALIZACION: PositionOptions = {
 /** Tiempo máximo de espera de la petición al backend, en milisegundos. */
 export const TIMEOUT_PETICION_MS = 12000;
 
+/**
+ * Opciones para navigator.geolocation.watchPosition (seguimiento en
+ * vivo). maximumAge en 0 fuerza una lectura fresca en cada actualización
+ * en vez de reusar una posición cacheada, a diferencia de
+ * OPCIONES_GEOLOCALIZACION que sí acepta una posición reciente.
+ */
+export const OPCIONES_SEGUIMIENTO_EN_VIVO: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 15000,
+  maximumAge: 0,
+};
+
 /** Causas de error que la vista sabe distinguir y explicar. */
 export type CausaError =
   | "sin-soporte"
@@ -144,3 +156,8 @@ export const TEXTO_BOTON_CERCANOS = `📍 Ver talleres cerca de mí`;
 export const TEXTO_BOTON_CERCANOS_CARGANDO = "Obteniendo tu ubicación...";
 export const TEXTO_BOTON_VOLVER = "Volver a la vista normal";
 export const TEXTO_CARGANDO_TALLERES = "Cargando talleres...";
+
+// --- Ubicación en vivo sobre el mapa ---
+export const TEXTO_BOTON_UBICACION_ENCENDER = "Mostrar mi ubicación en el mapa";
+export const TEXTO_BOTON_UBICACION_APAGAR = "Dejar de compartir mi ubicación";
+export const TEXTO_POPUP_ESTOY_AQUI = "Estás aquí";
