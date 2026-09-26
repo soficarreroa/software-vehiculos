@@ -10,6 +10,10 @@ export function limpiarSesion() {
   localStorage.removeItem("usuario");
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  localStorage.removeItem("expira_en");
+  localStorage.removeItem("vehiculos");
+  localStorage.removeItem("cotizaciones");
+  localStorage.removeItem("historial");
 }
 
 export function getUsuarioSesion(): UsuarioSesion | null {
@@ -27,4 +31,23 @@ export function getUsuarioSesion(): UsuarioSesion | null {
 export function puedeGestionarTalleres(usuario: UsuarioSesion | null): boolean {
   if (!usuario) return false;
   return usuario.rol !== "cliente";
+}
+
+export function sesionVencida(): boolean {
+  const expiraEn = localStorage.getItem("expira_en");
+  if (!expiraEn) return true;
+  return Date.now() > Number(expiraEn);
+}
+
+export function rutaPorRol(rol: string): string {
+  switch (rol) {
+    case "cliente":
+      return "/mis-vehiculos";
+    case "taller":
+      return "/talleres-aliados";
+    case "admin":
+      return "/";
+    default:
+      return "/no-autorizado";
+  }
 }

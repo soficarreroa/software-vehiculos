@@ -48,6 +48,30 @@
   width: 100%;
 }
 
+.workshopsLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 25px;
+  width: 100%;
+}
+
+.listColumn,
+.mapColumn {
+  min-width: 0;
+}
+
+.mapLoading {
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  min-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
 .workshopCard {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -159,6 +183,20 @@
   .title {
     font-size: 1.8rem;
   }
+
+  .workshopsLayout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .mapColumn {
+    position: sticky;
+    top: 20px;
+  }
+
+  .mapLoading {
+    min-height: 520px;
+  }
 }
 
 .emptyState {
@@ -192,6 +230,69 @@
   display: flex;
   justify-content: stretch;
   margin-bottom: 20px;
+}
+
+.nearbyRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.nearbyButton {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nearbyButton:hover {
+  background: var(--primary-color-dark, #0056b3);
+  transform: translateY(-2px);
+}
+
+.nearbyButton:disabled {
+  background: var(--text-light);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nearbyBackButton {
+  background: transparent;
+  color: var(--text-light);
+  border: 1px solid var(--border-color);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nearbyBackButton:hover {
+  background: var(--hover-bg, #f5f5f5);
+  color: var(--text-primary);
+}
+
+.geoMessage {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin: 0 0 15px 0;
+}
+
+.workshopDistance {
+  font-weight: 600;
+  color: var(--primary-color);
+  white-space: nowrap;
 }
 
 .addButton {
@@ -362,6 +463,16 @@
     justify-content: flex-end;
   }
 
+  .nearbyRow {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .nearbyButton,
+  .nearbyBackButton {
+    width: auto;
+  }
+
   .addButton {
     width: auto;
   }
@@ -378,4 +489,72 @@
   .cancelButton {
     width: auto;
   }
+}
+
+/* --- Estados vacíos y de error (casos límite) --- */
+
+.emptyActions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.retryButton {
+  background: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retryButton:hover {
+  background: var(--primary-color-dark, #0056b3);
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+/* --- Botón flotante de ubicación en vivo (sobre el mapa) --- */
+
+.mapOverlayWrapper {
+  position: relative;
+}
+
+.locateButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.locateButton:hover {
+  transform: scale(1.06);
+}
+
+.locateButtonActive {
+  background: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+}
+
+.mapNotice {
+  margin-top: 12px;
 }

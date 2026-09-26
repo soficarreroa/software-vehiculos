@@ -10,10 +10,6 @@ import {
 } from "./History.constants";
 import { historyService, Report } from "./History.service";
 
-interface HistoryPageProps {
-  userId?: string;
-}
-
 const formatDate = (date: Date) => ({
   day: date.getDate().toString(),
   month: date
@@ -41,7 +37,7 @@ const getStatusClass = (
   }
 };
 
-const HistoryPage = ({ userId = "1" }: HistoryPageProps): React.ReactElement => {
+const HistoryPage = (): React.ReactElement => {
   const [reports, setReports] = useState<Report[]>([]);
   const [filter, setFilter] = useState<string>(FILTER_DEFAULT);
   const [loading, setLoading] = useState<boolean>(true);
@@ -55,7 +51,7 @@ const HistoryPage = ({ userId = "1" }: HistoryPageProps): React.ReactElement => 
       try {
         setLoading(true);
         setError(null);
-        const data = await historyService.getHistorial(userId);
+        const data = await historyService.getHistorial();
         if (isMounted) setReports(data);
       } catch (err) {
         console.error("Error al cargar el historial:", err);
@@ -69,12 +65,12 @@ const HistoryPage = ({ userId = "1" }: HistoryPageProps): React.ReactElement => 
     return () => {
       isMounted = false;
     };
-  }, [userId]);
+  }, []);
 
   const handleDownloadPDF = async (id: number) => {
     try {
       setDownloadingId(id);
-      await historyService.downloadReportPdf(id, userId);
+      await historyService.downloadReportPdf(id);
     } catch (err) {
       alert(err instanceof Error ? err.message : ERROR_MESSAGES.LOAD_ERROR);
     } finally {

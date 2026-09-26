@@ -15,6 +15,7 @@ interface WorkshopCardProps {
   direccion: string;
   rating: number;
   reviews: number;
+  distanciaKm?: number;
 }
 
 const WorkshopCard = ({
@@ -23,6 +24,7 @@ const WorkshopCard = ({
   direccion,
   rating,
   reviews,
+  distanciaKm,
 }: WorkshopCardProps) => {
   const iconMap: Record<string, string> = {
     "Mecánica general": "🔧",
@@ -41,6 +43,11 @@ const WorkshopCard = ({
         <h3 className={styles.workshopName}>{nombre}</h3>
         <div className={styles.workshopInfo}>
           {LOCATION_PREFIX} {direccion}
+          {distanciaKm !== undefined && distanciaKm !== null && (
+            <span className={styles.workshopDistance}>
+              • a {Number(distanciaKm.toFixed(1))} km
+            </span>
+          )}
         </div>
         <div className={styles.workshopFooter}>
           <span className={styles.rating}>

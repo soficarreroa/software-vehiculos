@@ -3,6 +3,7 @@ import {
   STATUS_MAP,
   ERROR_MESSAGES,
 } from "./History.constants";
+import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 
 export interface ReportBackendDTO {
   id: number;
@@ -24,32 +25,25 @@ export interface Report {
   status: ReportStatus;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export const historyService = {
-  async getHistorial(userId: string): Promise<Report[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/historial?user_id=${userId}`);
-    
-    // Si la respuesta falla, lee el texto HTML/mensaje en lugar de forzar .json()
+  async getHistorial(placa?: string): Promise<Report[]> {
+    const query = placa ? `?placa=${encodeURIComponent(placa)}` : "";
+    const response = await authenticatedFetch(`/api/v1/historial/${query}`);
     if (!response.ok) {
-      const errorHtml = await response.text();
-      console.error(`[${response.status}] Error del backend:`, errorHtml);
-      throw new Error(`[${response.status}] ${ERROR_MESSAGES.LOAD_ERROR}`);
+      throw await readApiError(response, ERROR_MESSAGES.LOAD_ERROR);
     }
 
     const rawData: ReportBackendDTO[] = await response.json();
     return rawData.map((dto) => this.mapDTOToReport(dto));
   },
 
-  async downloadReportPdf(cotizacionId: number, userId: string): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/v1/historial/${cotizacionId}/descargar-pdf?user_id=${userId}`
+  async downloadReportPdf(cotizacionId: number): Promise<void> {
+  const response = await authenticatedFetch(
+    `/api/v1/historial/${cotizacionId}/descargar-pdf`,
   );
 
   if (!response.ok) {
-    const errorHtml = await response.text();
-    console.error("Error al descargar PDF:", errorHtml);
-    throw new Error("Error al descargar el archivo PDF.");
+    throw await readApiError(response, "Error al descargar el archivo PDF.");
   }
 
   const blob = await response.blob();

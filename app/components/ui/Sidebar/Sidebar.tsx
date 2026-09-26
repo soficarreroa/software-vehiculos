@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { limpiarSesion } from "@/app/lib/auth/session";
 import styles from "./Sidebar.module.css";
 
 const menuItems = [
@@ -16,9 +17,15 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   const closeMenu = () => setIsOpen(false);
+  const handleLogout = () => {
+    limpiarSesion();
+    closeMenu();
+    router.replace("/login");
+  };
 
   return (
     <>
@@ -51,6 +58,9 @@ export default function Sidebar() {
           <Link href="#" onClick={closeMenu} className={styles.navLink}>
             Ajustes
           </Link>
+          <button type="button" onClick={handleLogout} className={styles.logoutButton}>
+            Cerrar sesión
+          </button>
         </div>
       </nav>
     </>
