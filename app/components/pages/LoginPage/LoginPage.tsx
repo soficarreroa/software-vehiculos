@@ -71,6 +71,9 @@ export default function LoginPage() {
           </button>
         </div>
         {errors.contrasena && <span className={styles.errorText}>{errors.contrasena.message}</span>}
+        <div className={styles.forgotLink}>
+          <Link href="/olvide-contrasena">¿Olvidaste tu contraseña?</Link>
+        </div>
       </div>
 
       {serverError && <p className={styles.serverError}>{serverError}</p>}
