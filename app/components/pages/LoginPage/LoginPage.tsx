@@ -9,7 +9,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { loginSchema, type LoginFormValues } from "./Login.schema";
 import { loginRequest } from "./Login.service";
-import { limpiarSesion, rutaPorRol } from "@/app/lib/auth/session";
+import { guardarSesion, rutaPorRol } from "@/app/lib/auth/session";
 import styles from "./LoginPage.module.css";
 
 export default function LoginPage() {
@@ -29,11 +29,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const result = await loginRequest(data);
-      limpiarSesion();
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("refresh_token", result.refresh_token);
-      localStorage.setItem("usuario", JSON.stringify(result.usuario));
-      localStorage.setItem("expira_en", String(Date.now() + result.expires_in * 1000));
+      guardarSesion(result);
       router.push(rutaPorRol(result.usuario.rol));
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Error inesperado");
