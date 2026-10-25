@@ -1,0 +1,57 @@
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.acciones > button {
+  flex: 1 1 160px;
+  min-height: 44px; /* tamaño cómodo para tocar en el celular */
+}
+
+.boton,
+.botonSecundario {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.boton {
+  border: 1px solid transparent;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.botonSecundario {
+  border: 1px solid #94a3b8;
+  background: transparent;
+  color: inherit;
+}
+
+.boton:disabled,
+.botonSecundario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.previewBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 8px;
+  background:
