@@ -37,7 +37,22 @@ export default function MyVehiclesPage() {
   };
 
   useEffect(() => {
-    fetchVehiculos();
+    let activo = true;
+    getAuthenticatedVehicles()
+      .then((vehicles) => {
+        if (activo) setMyVehicles(vehicles);
+      })
+      .catch((err) => {
+        if (!activo) return;
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+        console.error('Error al cargar vehículos:', err);
+      })
+      .finally(() => {
+        if (activo) setLoading(false);
+      });
+    return () => {
+      activo = false;
+    };
   }, []);
 
   // Función para guardar vehículo con VALIDACIÓN DE PLACA

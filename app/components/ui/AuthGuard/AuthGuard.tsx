@@ -1,24 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { limpiarSesion, sesionVencida } from "@/app/lib/auth/session";
 
+const sinSuscripcion = () => () => {};
+
+function haySesionValida(): boolean {
+  return !!localStorage.getItem("access_token") && !sesionVencida();
+}
+
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [checked, setChecked] = useState(false);
+  // false en servidor/hidratación; en el cliente refleja si la sesión es válida.
+  const autenticado = useSyncExternalStore(sinSuscripcion, haySesionValida, () => false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token || sesionVencida()) {
+    if (!autenticado) {
       limpiarSesion();
       router.replace("/login");
-      return;
     }
-    setChecked(true);
-  }, [router]);
+  }, [autenticado, router]);
 
-  if (!checked) return null;
+  if (!autenticado) return null;
 
   return <>{children}</>;
 }

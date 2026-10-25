@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import { getUsuarioSesion, UsuarioSesion } from "./session";
+import { ReactNode } from "react";
+import { useMontado, useUsuarioSesion } from "./session";
 
 interface RoleGateProps {
   excludeRoles: string[];
@@ -9,13 +9,8 @@ interface RoleGateProps {
 }
 
 export default function RoleGate({ excludeRoles, children }: RoleGateProps) {
-  const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
-  const [montado, setMontado] = useState(false);
-
-  useEffect(() => {
-    setUsuario(getUsuarioSesion());
-    setMontado(true);
-  }, []);
+  const usuario = useUsuarioSesion();
+  const montado = useMontado();
 
   if (!montado) return null;
   if (!usuario || excludeRoles.includes(usuario.rol)) return null;

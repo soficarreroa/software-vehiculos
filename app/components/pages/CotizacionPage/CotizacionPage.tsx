@@ -36,9 +36,11 @@ interface ItemSeleccionado {
 
 export default function CotizacionPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [piezasDisponibles, setPiezasDisponibles] = useState<Pieza[]>([]);
+  const [piezasCargadas, setPiezasCargadas] = useState<Pieza[]>([]);
   
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | 'Selected'>('Selected');
+  // Sin vehículo seleccionado no hay piezas disponibles (valor derivado, sin setState en el efecto)
+  const piezasDisponibles = typeof selectedVehicleId === 'number' ? piezasCargadas : [];
   const [observaciones, setObservaciones] = useState('');
   const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split('T')[0]);
   
@@ -70,19 +72,17 @@ export default function CotizacionPage() {
           return res.json();
         })
         .then((data: Pieza[]) => {
-          if (activo) setPiezasDisponibles(Array.isArray(data) ? data : []);
+          if (activo) setPiezasCargadas(Array.isArray(data) ? data : []);
         })
         .catch(err => {
           if (activo) {
-            setPiezasDisponibles([]);
+            setPiezasCargadas([]);
             console.error("Error cargando piezas:", err);
           }
         });
       return () => {
         activo = false;
       };
-    } else {
-      setPiezasDisponibles([]);
     }
   }, [selectedVehicleId]);
 
@@ -106,7 +106,7 @@ export default function CotizacionPage() {
   // Función para manejar etiquetas SIN emojis para la DB
   const toggleEtiqueta = (index: number, valorEtiqueta: string) => {
     const newItems = [...items];
-    let desc = newItems[index].descripcion;
+    const desc = newItems[index].descripcion;
 
     // Convertimos la descripción en un array para manipularla mejor
     let etiquetasActivas = desc ? desc.split(', ').filter(tag => tag.trim() !== "") : [];
@@ -178,7 +178,7 @@ const generarPDF = (vehiculo: Vehicle) => {
   });
 
   // Resumen de Totales
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
   
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
