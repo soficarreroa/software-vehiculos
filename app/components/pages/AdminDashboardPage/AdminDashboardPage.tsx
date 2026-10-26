@@ -35,6 +35,14 @@ const formatMoneda = (valor: number | null, moneda: string) =>
     ? "—"
     : `${new Intl.NumberFormat("es-CO").format(valor)} ${moneda}`;
 
+const NOMBRES_RECURSOS = {
+  resumen: "el resumen general",
+  talleres: "la lista de talleres",
+  usuarios: "la lista de usuarios",
+  piezas: "el catálogo de piezas",
+  catalogo: "el catálogo de precios",
+} as const;
+
 const FORM_PRECIO_INICIAL = {
   piezaId: "",
   marca: "",
@@ -99,14 +107,6 @@ const AdminDashboardPage = () => {
   const toggleSeccion = (seccion: keyof typeof seccionesAbiertas) => {
     setSeccionesAbiertas((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
   };
-
-  const NOMBRES_RECURSOS = {
-  resumen: "el resumen general",
-  talleres: "la lista de talleres",
-  usuarios: "la lista de usuarios",
-  piezas: "el catálogo de piezas",
-  catalogo: "el catálogo de precios",
-} as const;
 
 useEffect(() => {
   let obsoleto = false;
@@ -476,7 +476,7 @@ useEffect(() => {
               <div className={styles.emptyState}>
                 <span className={styles.emptyIcon}>🔍</span>
                 <p className={styles.emptyText}>
-                  Ningún usuario coincide con "{busquedaUsuario}".
+                  Ningún usuario coincide con &quot;{busquedaUsuario}&quot;.
                 </p>
               </div>
             ) : (

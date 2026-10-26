@@ -8,7 +8,7 @@ import Button from "../../ui/Button/Button";
 import Pill from "../../ui/Pill/Pill";
 import styles from "./controlPanelpage.module.css";
 import { controlPanelPageOptions } from "@/lib/constants/controlPanel.constants";
-import { getUsuarioSesion, UsuarioSesion } from "@/app/lib/auth/session";
+import { useMontado, useUsuarioSesion } from "@/app/lib/auth/session";
 import type { Workshop } from "@/app/types/workshop";
 import { authenticatedFetch } from "@/app/lib/api/client";
 
@@ -24,28 +24,25 @@ const categoriaIconos: Record<string, string> = {
 
 const ControlPanelPage = () => {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
-  const [montado, setMontado] = useState(false);
+  const usuario = useUsuarioSesion();
+  const montado = useMontado();
   const [talleres, setTalleres] = useState<Workshop[]>([]);
-  const [cargando, setCargando] = useState(false);
+  const [cargadoPara, setCargadoPara] = useState<string | null>(null);
+
+  const authIdTaller = usuario?.rol === "taller" ? usuario.auth_id : null;
+  const cargando = authIdTaller !== null && cargadoPara !== authIdTaller;
 
   useEffect(() => {
-    setUsuario(getUsuarioSesion());
-    setMontado(true);
-  }, []);
-
-  useEffect(() => {
-    if (usuario?.rol !== "taller") return;
+    if (authIdTaller === null) return;
 
     let activo = true;
-    setCargando(true);
 
     authenticatedFetch("/api/v1/talleres")
       .then((res) => res.json())
       .then((data: unknown) => {
         if (!activo) return;
         const propios = (Array.isArray(data) ? data : []).filter(
-          (taller: Workshop) => taller.propietario_id === usuario.auth_id
+          (taller: Workshop) => taller.propietario_id === authIdTaller
         );
         setTalleres(propios);
       })
@@ -53,13 +50,13 @@ const ControlPanelPage = () => {
         console.error("Error al cargar talleres:", error);
       })
       .finally(() => {
-        if (activo) setCargando(false);
+        if (activo) setCargadoPara(authIdTaller);
       });
 
     return () => {
       activo = false;
     };
-  }, [usuario]);
+  }, [authIdTaller]);
 
   if (!montado) return null;
 
