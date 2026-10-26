@@ -1,0 +1,567 @@
+/* ---------- Layout general ---------- */
+.paso,
+.panelDanos,
+.resumen {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 20px 16px;
+  box-shadow: 0 1px 3px var(--card-shadow);
+}
+
+.paso {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.pasoTitulo {
+  font-size: 1.15rem;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 480px;
+}
+
+.label,
+.piezaLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.select:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cargando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-main);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.5s;
+  }
+}
+
+.resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .columnas {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+
+  .foto {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+/* ---------- Resumen de costo ---------- */
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resumenTitulo {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-main);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.tab {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-light);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .tab {
+    min-width: 0;
+    padding: 8px 2px;
+    font-size: 0.8rem;
+  }
+}
+
+.tabActiva {
+  background: var(--bg-primary);
+  color: var(--primary-color);
+  box-shadow: 0 1px 3px var(--card-shadow-hover);
+}
+
+.tabDescripcion {
+  margin: -6px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--primary-bg);
+}
+
+.totalValor {
+  font-size: clamp(1.5rem, 6vw, 2.2rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.totalMoneda {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.totalVacio {
+  color: var(--text-main);
+}
+
+.tablaWrap {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.tabla th,
+.tabla td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tabla th {
+  color: var(--text-light);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.derecha {
+  text-align: right !important;
+}
+
+.capitalizar {
+  text-transform: capitalize;
+}
+
+@media (max-width: 599px) {
+  .tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .tabla tr {
+    display: block;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tabla td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: none;
+    padding: 4px 0;
+    text-align: right;
+  }
+
+  .tabla td::before {
+    content: attr(data-label);
+    color: var(--text-light);
+    text-align: left;
+  }
+}
+
+.soloLector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Foto con cajas ---------- */
+.foto {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fotoWrap {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.fotoImg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cajaGrupo {
+  pointer-events: all;
+  cursor: default;
+  color: #94a3b8;
+}
+
+.sev_leve {
+  color: #16a34a;
+}
+
+.sev_moderado {
+  color: #ca8a04;
+}
+
+.sev_grave {
+  color: #dc2626;
+}
+
+.caja {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.cajaEtiqueta {
+  fill: currentColor;
+}
+
+.cajaNumero {
+  fill: #fff;
+  font-weight: 700;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.cajaActiva .caja {
+  stroke-width: 6;
+  fill: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.fotoLeyenda {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* ---------- Lista de daños ---------- */
+.panelDanos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.danoItem {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.danoResaltado {
+  border-color: var(--primary-color);
+  background: var(--primary-bg);
+}
+
+.danoNumero {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--sidebar-color);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.danoCuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.danoCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.danoNombre {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.confianza {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.confianzaTexto {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+.barra {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.barraRelleno {
+  height: 100%;
+  background: var(--primary-color);
+}
+
+.piezaFila {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.estadoOk,
+.estadoAviso {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.estadoOk {
+  color: var(--pill-success-text);
+  font-weight: 600;
+}
+
+.estadoPieza {
+  color: var(--text-main);
+}
+
+.estadoAviso {
+  color: var(--pill-warning-text);
+}
+
+/* ---------- Advertencias y siguiente paso ---------- */
+.advertencias {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vehiculoLinea,
+.nota {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.listaSimple {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.siguiente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.siguiente p {
+  margin: 0;
+  color: var(--text-main);
+}
+
+.enlaceBoton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: var(--btn-green);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---------- Errores ---------- */
+.errorCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px 16px;
+  border-radius: 14px;
+  border: 1px solid;
+}
+
+.tono_error {
+  background: var(--info-error-bg);
+  border-color: var(--info-error-border);
+}
+
+.tono_warning {
+  background: var(--info-warning-bg);
+  border-color: var(--info-warning-border);
+}
+
+.tono_success {
+  background: var(--info-success-bg);
+  border-color: var(--info-success-border);
+}
+
+.errorIcono {
+  font-size: 2rem;
+}
+
+.errorTitulo {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.errorMensaje {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.consejos {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumenAgregado {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.piezaFija {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}

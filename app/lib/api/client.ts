@@ -61,7 +61,11 @@ export async function authenticatedFetch(
   const token =
     typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  // Con FormData (subir archivos) el navegador debe poner su propio Content-Type,
+  // que incluye el "boundary"; si lo forzamos a JSON el backend no puede leer el archivo.
+  if (!(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   let response = await fetch(`${API_BASE_URL}${path}`, {
