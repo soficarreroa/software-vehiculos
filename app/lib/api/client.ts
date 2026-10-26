@@ -61,8 +61,9 @@ export async function authenticatedFetch(
   const token =
     typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const headers = new Headers(init.headers);
-  // Con FormData (subida de fotos) el navegador define el Content-Type con su boundary.
-  if (!(init.body instanceof FormData) && !headers.has("Content-Type")) {
+  // Con FormData (subir archivos) el navegador debe poner su propio Content-Type,
+  // que incluye el "boundary"; si lo forzamos a JSON el backend no puede leer el archivo.
+  if (!(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
   if (token) headers.set("Authorization", `Bearer ${token}`);
