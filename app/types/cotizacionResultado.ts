@@ -154,3 +154,24 @@ export interface ResultadoAgregar {
   /** Piezas que no existen en el catálogo del vehículo (hay que agregarlas a mano). */
   sinCatalogo: string[];
 }
+
+/** Pieza del catálogo del vehículo (GET /vehiculos/{id}/piezas-disponibles). */
+export interface PiezaCatalogo {
+  id: number;
+  nombre: string;
+  precio_repuesto: number | null;
+  precio_mano_obra: number | null;
+  precio_pintura: number | null;
+  moneda: string | null;
+}
+
+/**
+ * Pieza sin rango en el estimador (otra categoría, o vehículo fuera del catálogo de
+ * precios) que se cotiza con el precio de catálogo de la base de datos.
+ */
+export interface ExtraCatalogo {
+  id: number;
+  nombre: string;
+  indices: number[];
+  valor: number;
+}

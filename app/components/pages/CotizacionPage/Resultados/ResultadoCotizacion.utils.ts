@@ -1,4 +1,5 @@
-import { ETIQUETAS_DANO } from "./ResultadoCotizacion.constants";
+import type { PiezaCatalogo } from "@/app/types/cotizacionResultado";
+import { ETIQUETAS_DANO, PIEZAS_ESTIMABLES } from "./ResultadoCotizacion.constants";
 
 const formateadorCop = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -44,3 +45,35 @@ export function normalizarNombre(valor: string): string {
     .toLowerCase()
     .trim();
 }
+
+/**
+ * Categoría con rango de precios del estimador a la que equivale una pieza
+ * ("Puerta delantera izquierda" -> "Puerta"). null si no hay equivalencia clara.
+ */
+export function categoriaEstimador(nombre: string): (typeof PIEZAS_ESTIMABLES)[number] | null {
+  const n = normalizarNombre(nombre);
+  const exacta = PIEZAS_ESTIMABLES.find((p) => normalizarNombre(p) === n);
+  if (exacta) return exacta;
+  if (/(baul|maletero|cajuela|portón|porton)/.test(n)) return null;
+  if (n.includes("capo")) return "Capó";
+  if (/(guardabarro|salpicadera|aleta)/.test(n)) return "Guardabarros";
+  if (n.includes("puerta")) return "Puerta";
+  if (/(bumper|parachoque|defensa|paragolpe)/.test(n)) {
+    if (/(trasero|posterior)/.test(n)) return "Bumper trasero";
+    if (/(delantero|frontal)/.test(n)) return "Bumper delantero";
+  }
+  return null;
+}
+
+/** Busca una pieza en el catálogo del vehículo: nombre igual o única coincidencia parcial. */
+export function buscarPiezaCatalogo<T extends { nombre: string }>(nombre: string, catalogo: T[]): T | undefined {
+  const buscado = normalizarNombre(nombre);
+  const exacta = catalogo.find((p) => normalizarNombre(p.nombre) === buscado);
+  if (exacta) return exacta;
+  const parciales = catalogo.filter((p) => normalizarNombre(p.nombre).includes(buscado));
+  return parciales.length === 1 ? parciales[0] : undefined;
+}
+
+/** Precio de catálogo completo de una pieza (repuesto + mano de obra + pintura). */
+export const precioCatalogo = (p: PiezaCatalogo): number =>
+  (p.precio_repuesto ?? 0) + (p.precio_mano_obra ?? 0) + (p.precio_pintura ?? 0);

@@ -10,7 +10,7 @@ import { authenticatedFetch, readApiError } from '@/app/lib/api/client';
 import { getAuthenticatedVehicles, type Vehicle } from '@/app/lib/api/vehicles';
 import type { HallazgoFoto, ResultadoAgregar } from '@/app/types/cotizacionResultado';
 import AnalisisFoto from './Resultados/AnalisisFoto';
-import { etiquetaPresupuesto, normalizarNombre } from './Resultados/ResultadoCotizacion.utils';
+import { buscarPiezaCatalogo as buscarPieza, etiquetaPresupuesto } from './Resultados/ResultadoCotizacion.utils';
 
 // Configuración de etiquetas: label (visual), emoji (interfaz), valor (base de datos)
 const ETIQUETAS_DANOS = [
@@ -102,14 +102,8 @@ export default function CotizacionPage() {
     }
   };
 
-  // Busca la pieza del catálogo del vehículo por nombre (igual, o única coincidencia parcial)
-  const buscarPiezaCatalogo = (nombre: string): Pieza | undefined => {
-    const buscado = normalizarNombre(nombre);
-    const exacta = piezasDisponibles.find(p => normalizarNombre(p.nombre) === buscado);
-    if (exacta) return exacta;
-    const parciales = piezasDisponibles.filter(p => normalizarNombre(p.nombre).includes(buscado));
-    return parciales.length === 1 ? parciales[0] : undefined;
-  };
+  const buscarPiezaCatalogo = (nombre: string): Pieza | undefined =>
+    buscarPieza(nombre, piezasDisponibles);
 
   // Pasa al presupuesto las piezas confirmadas en el análisis con foto
   const agregarDesdeFoto = (hallazgos: HallazgoFoto[]): ResultadoAgregar => {
@@ -314,6 +308,7 @@ const enviarCotizacion = async () => {
 
       <AnalisisFoto
         vehiculoId={typeof selectedVehicleId === 'number' ? selectedVehicleId : null}
+        catalogo={piezasDisponibles}
         onAgregarAlPresupuesto={agregarDesdeFoto}
       />
 

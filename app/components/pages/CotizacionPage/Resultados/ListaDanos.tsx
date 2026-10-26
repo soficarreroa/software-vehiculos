@@ -4,10 +4,12 @@ import Pill from "@/app/components/ui/Pill/Pill";
 import type {
   DanoDetectado,
   EstimacionResponse,
+  ExtraCatalogo,
+  PiezaCatalogo,
   TipoEstablecimiento,
 } from "@/app/types/cotizacionResultado";
 import { COLOR_SEVERIDAD, ETIQUETAS_SEVERIDAD, PIEZAS_ESTIMABLES } from "./ResultadoCotizacion.constants";
-import { etiquetaDano, formatPorcentaje, formatRango } from "./ResultadoCotizacion.utils";
+import { etiquetaDano, formatCop, formatPorcentaje, formatRango, normalizarNombre } from "./ResultadoCotizacion.utils";
 import styles from "./ResultadoCotizacion.module.css";
 
 interface ListaDanosProps {
@@ -15,6 +17,8 @@ interface ListaDanosProps {
   asignaciones: Record<number, string>;
   onAsignar: (indice: number, pieza: string) => void;
   estimacion: EstimacionResponse | null;
+  extras: ExtraCatalogo[];
+  catalogo: PiezaCatalogo[];
   establecimiento: TipoEstablecimiento;
   resaltado: number | null;
   onResaltar: (indice: number | null) => void;
@@ -26,15 +30,20 @@ export default function ListaDanos({
   asignaciones,
   onAsignar,
   estimacion,
+  extras,
+  catalogo,
   establecimiento,
   resaltado,
   onResaltar,
   deshabilitado,
 }: ListaDanosProps) {
+  // Piezas del vehículo que no son una de las categorías con rango de precios
+  const nombresCategoria = new Set(PIEZAS_ESTIMABLES.map(normalizarNombre));
+  const piezasVehiculo = catalogo.filter((p) => !nombresCategoria.has(normalizarNombre(p.nombre)));
+
   /** Qué pasó con cada daño tras calcular: rango de su pieza, ignorado o no estimado. */
   const estadoDano = (indice: number) => {
-    if (!estimacion) return null;
-    const pieza = estimacion.desglose.find((d) => d.danos.some((x) => x.indice_dano === indice));
+    const pieza = estimacion?.desglose.find((d) => d.danos.some((x) => x.indice_dano === indice));
     if (pieza) {
       const rango = pieza.precios[establecimiento];
       return {
@@ -43,6 +52,15 @@ export default function ListaDanos({
         texto: rango ? formatRango(rango.minimo_cop, rango.maximo_cop) : "Sin precio en este tipo de taller",
       };
     }
+    const extra = extras.find((e) => e.indices.includes(indice));
+    if (extra) {
+      return {
+        tipo: "ok" as const,
+        pieza: extra.nombre,
+        texto: `${formatCop(extra.valor)} (precio de catálogo)`,
+      };
+    }
+    if (!estimacion) return null;
     const ignorado = estimacion.danos_ignorados.find((d) => d.indice_dano === indice);
     if (ignorado) return { tipo: "aviso" as const, texto: ignorado.motivo };
     const noEstimado = estimacion.danos_no_estimados.find((d) => d.indice_dano === indice);
@@ -102,11 +120,22 @@ export default function ListaDanos({
                   onChange={(e) => onAsignar(i, e.target.value)}
                 >
                   <option value="">Selecciona la pieza…</option>
-                  {PIEZAS_ESTIMABLES.map((pieza) => (
-                    <option key={pieza} value={pieza}>
-                      {pieza}
-                    </option>
-                  ))}
+                  <optgroup label="Categorías con rango de precios">
+                    {PIEZAS_ESTIMABLES.map((pieza) => (
+                      <option key={pieza} value={pieza}>
+                        {pieza}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {piezasVehiculo.length > 0 && (
+                    <optgroup label="Piezas de tu vehículo (precio de catálogo)">
+                      {piezasVehiculo.map((pieza) => (
+                        <option key={pieza.id} value={pieza.nombre}>
+                          {pieza.nombre}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

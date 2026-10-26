@@ -10,7 +10,9 @@ import type {
   AnalisisDanosResponse,
   ErrorResultado as ErrorResultadoTipo,
   EstimacionResponse,
+  ExtraCatalogo,
   HallazgoFoto,
+  PiezaCatalogo,
   ResultadoAgregar,
   TipoEstablecimiento,
 } from "@/app/types/cotizacionResultado";
@@ -20,6 +22,7 @@ import FotoAnalizada from "./FotoAnalizada";
 import ListaDanos from "./ListaDanos";
 import ResumenCosto from "./ResumenCosto";
 import { ANALISIS_DEMO, ESTIMACION_DEMO, FOTO_DEMO } from "./ResultadoCotizacion.mock";
+import { buscarPiezaCatalogo, categoriaEstimador, precioCatalogo } from "./ResultadoCotizacion.utils";
 import styles from "./ResultadoCotizacion.module.css";
 
 type Fase = "inicio" | "analizando" | "resultado" | "error";
@@ -29,6 +32,8 @@ const MODO_DESARROLLO = process.env.NODE_ENV !== "production";
 interface AnalisisFotoProps {
   /** Vehículo elegido en «1. Datos del siniestro»; null si todavía no eligió. */
   vehiculoId: number | null;
+  /** Piezas del catálogo del vehículo (con precios), cargadas por la página. */
+  catalogo: PiezaCatalogo[];
   /** Pasa las piezas confirmadas al presupuesto de la cotización. */
   onAgregarAlPresupuesto: (hallazgos: HallazgoFoto[]) => ResultadoAgregar;
 }
@@ -37,7 +42,7 @@ interface AnalisisFotoProps {
  * Cotización con foto dentro del módulo de Cotización: foto -> YOLO -> piezas ->
  * rango de costo, con la opción de volcar el resultado al presupuesto.
  */
-export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: AnalisisFotoProps) {
+export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupuesto }: AnalisisFotoProps) {
   const [foto, setFoto] = useState<File | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const urlRef = useRef<string | null>(null);
@@ -49,6 +54,7 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
 
   const [asignaciones, setAsignaciones] = useState<Record<number, string>>({});
   const [estimacion, setEstimacion] = useState<EstimacionResponse | null>(null);
+  const [extras, setExtras] = useState<ExtraCatalogo[]>([]);
   const [calculando, setCalculando] = useState(false);
   const [errorEstimacion, setErrorEstimacion] = useState<string | null>(null);
   const [establecimiento, setEstablecimiento] = useState<TipoEstablecimiento>("multimarca");
@@ -71,6 +77,7 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
   const reiniciarResultados = () => {
     setAnalisis(null);
     setEstimacion(null);
+    setExtras([]);
     setAsignaciones({});
     setErrorEstimacion(null);
     setResumenAgregado(null);
@@ -130,6 +137,7 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
       return siguiente;
     });
     setEstimacion(null); // los totales dejan de ser válidos al cambiar piezas
+    setExtras([]);
     setErrorEstimacion(null);
     setResumenAgregado(null);
   };
@@ -142,9 +150,18 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
 
     if (esDemo) {
       setEstimacion(ESTIMACION_DEMO);
+      setExtras([]);
       return;
     }
-    if (vehiculoId === null) {
+
+    const lista = Object.entries(asignaciones).map(([indice, pieza]) => ({
+      indice: Number(indice),
+      pieza,
+      categoria: categoriaEstimador(pieza),
+    }));
+    const paraEstimador = lista.filter((a) => a.categoria !== null);
+
+    if (paraEstimador.length > 0 && vehiculoId === null) {
       setErrorEstimacion("Selecciona el vehículo en «1. Datos del siniestro» para calcular el estimado.");
       return;
     }
@@ -152,19 +169,52 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
     setCalculando(true);
     setErrorEstimacion(null);
     try {
-      const respuesta = await analisisService.estimar({
-        vehiculo_id: vehiculoId,
-        danos: analisis.danos_detectados.map((d) => ({
-          tipo_dano: d.tipo_dano,
-          severidad: d.severidad,
-          confianza: d.confianza,
-        })),
-        asignaciones: Object.entries(asignaciones).map(([indice, pieza]) => ({
-          indice_dano: Number(indice),
-          pieza,
-        })),
-      });
+      // 1) Categorías con rango de precios (catálogo de reparación del backend)
+      let respuesta: EstimacionResponse | null = null;
+      if (paraEstimador.length > 0 && vehiculoId !== null) {
+        respuesta = await analisisService.estimar({
+          vehiculo_id: vehiculoId,
+          danos: analisis.danos_detectados.map((d) => ({
+            tipo_dano: d.tipo_dano,
+            severidad: d.severidad,
+            confianza: d.confianza,
+          })),
+          asignaciones: paraEstimador.map((a) => ({
+            indice_dano: a.indice,
+            pieza: a.categoria as string,
+          })),
+        });
+      }
+
+      // 2) Lo que el estimador no pudo cotizar se cotiza con el precio de catálogo de la pieza
+      const pendientes = new Map<number, { indice: number; pieza: string }>();
+      for (const a of lista) {
+        if (a.categoria === null) pendientes.set(a.indice, { indice: a.indice, pieza: a.pieza });
+      }
+      for (const nE of respuesta?.danos_no_estimados ?? []) {
+        const original = asignaciones[nE.indice_dano];
+        if (original) pendientes.set(nE.indice_dano, { indice: nE.indice_dano, pieza: original });
+      }
+
+      const porPieza = new Map<number, ExtraCatalogo>();
+      for (const { indice, pieza } of pendientes.values()) {
+        const encontrada = buscarPiezaCatalogo(pieza, catalogo);
+        const valor = encontrada ? precioCatalogo(encontrada) : 0;
+        if (!encontrada || valor <= 0) continue;
+        const previa = porPieza.get(encontrada.id);
+        if (previa) previa.indices.push(indice);
+        else porPieza.set(encontrada.id, { id: encontrada.id, nombre: encontrada.nombre, indices: [indice], valor });
+      }
+
+      const extrasCalculados = [...porPieza.values()];
+      if (!respuesta && extrasCalculados.length === 0) {
+        setErrorEstimacion(
+          "No tenemos precio para esa pieza en el catálogo de tu vehículo. Elige otra pieza de la lista o agrégala manualmente en «2. Detalle de Piezas».",
+        );
+        return;
+      }
       setEstimacion(respuesta);
+      setExtras(extrasCalculados);
     } catch (err) {
       setErrorEstimacion(clasificarError(err).mensaje);
     } finally {
@@ -235,6 +285,7 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
         <div className={styles.resultado}>
           <ResumenCosto
             estimacion={estimacion}
+            extras={extras}
             establecimiento={establecimiento}
             onCambiarEstablecimiento={setEstablecimiento}
             totalDanos={analisis.danos_detectados.length}
@@ -262,6 +313,8 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
                 asignaciones={asignaciones}
                 onAsignar={asignarPieza}
                 estimacion={estimacion}
+                extras={extras}
+                catalogo={catalogo}
                 establecimiento={establecimiento}
                 resaltado={resaltado}
                 onResaltar={setResaltado}
@@ -303,7 +356,7 @@ export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: Ana
 
           {estimacion && <Advertencias estimacion={estimacion} />}
 
-          {estimacion && (
+          {(estimacion || extras.length > 0) && (
             <div className={styles.siguiente}>
               <p>¿Quieres repararlo? Encuentra talleres aliados cerca de ti.</p>
               <Link href="/talleres-aliados" className={styles.enlaceBoton}>
