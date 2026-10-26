@@ -1,26 +1,4 @@
 /* ---------- Layout general ---------- */
-.container {
-  padding: 20px 16px 48px;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.header {
-  margin-bottom: 24px;
-}
-
-.header h1 {
-  font-size: 1.6rem;
-  color: var(--text-primary);
-  margin: 0 0 6px;
-}
-
-.subtitulo {
-  margin: 0;
-  color: var(--text-light);
-}
-
 .paso,
 .panelDanos,
 .resumen {
@@ -129,10 +107,6 @@
 }
 
 @media (min-width: 1024px) {
-  .container {
-    padding: 0 0 48px;
-  }
-
   .columnas {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   }
@@ -578,4 +552,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.resumenAgregado {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

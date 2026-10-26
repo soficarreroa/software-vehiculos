@@ -139,3 +139,18 @@ export interface ErrorResultado {
   tipo: TipoErrorResultado;
   mensaje: string;
 }
+
+/* ------------------- Puente con el presupuesto de CotizacionPage ------------------- */
+
+/** Pieza elegida por el usuario y los tipos de daño de la foto que la afectan. */
+export interface HallazgoFoto {
+  pieza: string;
+  tipos: string[];
+}
+
+export interface ResultadoAgregar {
+  /** Nombres de las piezas del catálogo que se agregaron al presupuesto. */
+  agregadas: string[];
+  /** Piezas que no existen en el catálogo del vehículo (hay que agregarlas a mano). */
+  sinCatalogo: string[];
+}

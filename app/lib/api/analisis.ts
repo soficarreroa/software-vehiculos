@@ -35,6 +35,15 @@ export async function estimarCotizacion(
   return (await response.json()) as EstimacionResponse;
 }
 
+/**
+ * Servicio de análisis de daños (nombre y método `analizarFoto` originales de
+ * AnalisisDanos.service.ts de Paula) más el cálculo del estimado.
+ */
+export const analisisService = {
+  analizarFoto: analizarDanos,
+  estimar: estimarCotizacion,
+};
+
 /** Traduce cualquier fallo de red/API a un error claro para la pantalla. */
 export function clasificarError(error: unknown): ErrorResultado {
   if (error instanceof ApiError) {

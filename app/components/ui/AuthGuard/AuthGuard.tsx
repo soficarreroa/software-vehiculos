@@ -16,11 +16,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const autenticado = useSyncExternalStore(sinSuscripcion, haySesionValida, () => false);
 
   useEffect(() => {
-    if (!autenticado) {
+    // Se consulta el almacenamiento directamente: durante la hidratación `autenticado`
+    // todavía vale false (snapshot del servidor) y no debe cerrar una sesión válida.
+    if (!haySesionValida()) {
       limpiarSesion();
       router.replace("/login");
     }
-  }, [autenticado, router]);
+  }, [router]);
 
   if (!autenticado) return null;
 

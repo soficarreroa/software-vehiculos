@@ -5,12 +5,13 @@ import Link from "next/link";
 import Button from "@/app/components/ui/Button/Button";
 import Info from "@/app/components/ui/Info/Info";
 import SelectorFoto from "@/app/components/ui/SelectorFoto/SelectorFoto";
-import { analizarDanos, clasificarError, estimarCotizacion } from "@/app/lib/api/analisis";
-import { getAuthenticatedVehicles, type Vehicle } from "@/app/lib/api/vehicles";
+import { analisisService, clasificarError } from "@/app/lib/api/analisis";
 import type {
   AnalisisDanosResponse,
   ErrorResultado as ErrorResultadoTipo,
   EstimacionResponse,
+  HallazgoFoto,
+  ResultadoAgregar,
   TipoEstablecimiento,
 } from "@/app/types/cotizacionResultado";
 import Advertencias from "./Advertencias";
@@ -25,12 +26,18 @@ type Fase = "inicio" | "analizando" | "resultado" | "error";
 
 const MODO_DESARROLLO = process.env.NODE_ENV !== "production";
 
-export default function ResultadoCotizacionPage() {
-  const [vehiculos, setVehiculos] = useState<Vehicle[]>([]);
-  const [cargandoVehiculos, setCargandoVehiculos] = useState(true);
-  const [errorVehiculos, setErrorVehiculos] = useState<string | null>(null);
-  const [vehiculoId, setVehiculoId] = useState("");
+interface AnalisisFotoProps {
+  /** Vehículo elegido en «1. Datos del siniestro»; null si todavía no eligió. */
+  vehiculoId: number | null;
+  /** Pasa las piezas confirmadas al presupuesto de la cotización. */
+  onAgregarAlPresupuesto: (hallazgos: HallazgoFoto[]) => ResultadoAgregar;
+}
 
+/**
+ * Cotización con foto dentro del módulo de Cotización: foto -> YOLO -> piezas ->
+ * rango de costo, con la opción de volcar el resultado al presupuesto.
+ */
+export default function AnalisisFoto({ vehiculoId, onAgregarAlPresupuesto }: AnalisisFotoProps) {
   const [foto, setFoto] = useState<File | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const urlRef = useRef<string | null>(null);
@@ -46,39 +53,17 @@ export default function ResultadoCotizacionPage() {
   const [errorEstimacion, setErrorEstimacion] = useState<string | null>(null);
   const [establecimiento, setEstablecimiento] = useState<TipoEstablecimiento>("multimarca");
   const [resaltado, setResaltado] = useState<number | null>(null);
-
-  /* ----------------------------- Carga de vehículos ----------------------------- */
-  useEffect(() => {
-    let activo = true;
-    getAuthenticatedVehicles()
-      .then((lista) => {
-        if (!activo) return;
-        setVehiculos(lista);
-        if (lista.length === 1) setVehiculoId(String(lista[0].id));
-      })
-      .catch((err: unknown) => {
-        if (activo) {
-          setErrorVehiculos(err instanceof Error ? err.message : "No se pudieron cargar tus vehículos.");
-        }
-      })
-      .finally(() => {
-        if (activo) setCargandoVehiculos(false);
-      });
-    return () => {
-      activo = false;
-    };
-  }, []);
+  const [resumenAgregado, setResumenAgregado] = useState<ResultadoAgregar | null>(null);
 
   /* Libera la URL temporal de la foto al desmontar */
   useEffect(() => {
     return () => {
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      if (urlRef.current?.startsWith("blob:")) URL.revokeObjectURL(urlRef.current);
     };
   }, []);
 
-  /* --------------------------------- Handlers --------------------------------- */
   const reemplazarUrl = (nueva: string | null) => {
-    if (urlRef.current && urlRef.current.startsWith("blob:")) URL.revokeObjectURL(urlRef.current);
+    if (urlRef.current?.startsWith("blob:")) URL.revokeObjectURL(urlRef.current);
     urlRef.current = nueva;
     setFotoUrl(nueva);
   };
@@ -88,6 +73,7 @@ export default function ResultadoCotizacionPage() {
     setEstimacion(null);
     setAsignaciones({});
     setErrorEstimacion(null);
+    setResumenAgregado(null);
     setResaltado(null);
     setError(null);
   };
@@ -112,7 +98,7 @@ export default function ResultadoCotizacionPage() {
     reiniciarResultados();
     setFase("analizando");
     try {
-      const respuesta = await analizarDanos(foto);
+      const respuesta = await analisisService.analizarFoto(foto);
       if (respuesta.danos_detectados.length === 0) {
         setError({
           tipo: "sin_danos",
@@ -145,6 +131,7 @@ export default function ResultadoCotizacionPage() {
     });
     setEstimacion(null); // los totales dejan de ser válidos al cambiar piezas
     setErrorEstimacion(null);
+    setResumenAgregado(null);
   };
 
   const asignados = Object.keys(asignaciones).length;
@@ -157,16 +144,16 @@ export default function ResultadoCotizacionPage() {
       setEstimacion(ESTIMACION_DEMO);
       return;
     }
-    if (!vehiculoId) {
-      setErrorEstimacion("Selecciona el vehículo para calcular el estimado.");
+    if (vehiculoId === null) {
+      setErrorEstimacion("Selecciona el vehículo en «1. Datos del siniestro» para calcular el estimado.");
       return;
     }
 
     setCalculando(true);
     setErrorEstimacion(null);
     try {
-      const respuesta = await estimarCotizacion({
-        vehiculo_id: Number(vehiculoId),
+      const respuesta = await analisisService.estimar({
+        vehiculo_id: vehiculoId,
         danos: analisis.danos_detectados.map((d) => ({
           tipo_dano: d.tipo_dano,
           severidad: d.severidad,
@@ -185,53 +172,35 @@ export default function ResultadoCotizacionPage() {
     }
   };
 
-  /* ---------------------------------- Render ---------------------------------- */
-  const puedeAnalizar = !!foto && !!vehiculoId && fase !== "analizando";
+  /** Agrupa los daños por pieza y los envía al presupuesto de la cotización. */
+  const agregarAlPresupuesto = () => {
+    if (!analisis) return;
+    const porPieza = new Map<string, string[]>();
+    for (const [indice, pieza] of Object.entries(asignaciones)) {
+      const tipo = analisis.danos_detectados[Number(indice)]?.tipo_dano;
+      if (!tipo) continue;
+      porPieza.set(pieza, [...(porPieza.get(pieza) ?? []), tipo]);
+    }
+    const hallazgos: HallazgoFoto[] = [...porPieza].map(([pieza, tipos]) => ({ pieza, tipos }));
+    setResumenAgregado(onAgregarAlPresupuesto(hallazgos));
+  };
+
+  const hayFoto = fase !== "resultado";
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Cotización con foto</h1>
-        <p className={styles.subtitulo}>
-          Sube una foto del daño y obtén un rango aproximado de reparación en pocos segundos.
+    <section className={styles.paso} aria-labelledby="titulo-cotizar-foto">
+      <div>
+        <h2 id="titulo-cotizar-foto" className={styles.pasoTitulo}>
+          📷 Cotiza con una foto (opcional)
+        </h2>
+        <p className={styles.ayuda}>
+          Sube o toma una foto del daño: detectamos los daños, estimamos el costo y puedes pasar las
+          piezas al presupuesto.
         </p>
-      </header>
+      </div>
 
-      {(fase === "inicio" || fase === "analizando" || fase === "error") && (
-        <section className={styles.paso} aria-labelledby="titulo-paso-foto">
-          <h2 id="titulo-paso-foto" className={styles.pasoTitulo}>
-            1. Elige el vehículo y la foto
-          </h2>
-
-          {errorVehiculos && <Info severity="error">{errorVehiculos}</Info>}
-
-          <div className={styles.campo}>
-            <label htmlFor="vehiculo" className={styles.label}>
-              Vehículo
-            </label>
-            <select
-              id="vehiculo"
-              className={styles.select}
-              value={vehiculoId}
-              disabled={cargandoVehiculos || fase === "analizando"}
-              onChange={(e) => setVehiculoId(e.target.value)}
-            >
-              <option value="">
-                {cargandoVehiculos ? "Cargando vehículos…" : "Selecciona tu vehículo…"}
-              </option>
-              {vehiculos.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.marca} {v.modelo} · {v.placa}
-                </option>
-              ))}
-            </select>
-            {!cargandoVehiculos && vehiculos.length === 0 && !errorVehiculos && (
-              <p className={styles.ayuda}>
-                Aún no tienes vehículos. <Link href="/mis-vehiculos">Registra uno</Link> para cotizar.
-              </p>
-            )}
-          </div>
-
+      {hayFoto && (
+        <>
           <SelectorFoto
             key={claveSelector}
             onFotoSeleccionada={alSeleccionarFoto}
@@ -239,7 +208,7 @@ export default function ResultadoCotizacionPage() {
           />
 
           <div className={styles.acciones}>
-            <Button color="green" onClick={analizar} disabled={!puedeAnalizar}>
+            <Button color="green" onClick={analizar} disabled={!foto || fase === "analizando"}>
               {fase === "analizando" ? "Analizando…" : "Analizar daños"}
             </Button>
             {MODO_DESARROLLO && (
@@ -255,7 +224,7 @@ export default function ResultadoCotizacionPage() {
               Analizando tu foto… esto toma unos segundos.
             </div>
           )}
-        </section>
+        </>
       )}
 
       {fase === "error" && error && (
@@ -281,9 +250,9 @@ export default function ResultadoCotizacionPage() {
             />
 
             <section className={styles.panelDanos} aria-labelledby="titulo-danos">
-              <h2 id="titulo-danos" className={styles.pasoTitulo}>
+              <h3 id="titulo-danos" className={styles.pasoTitulo}>
                 Daños detectados ({analisis.danos_detectados.length})
-              </h2>
+              </h3>
               <p className={styles.ayuda}>
                 Indica qué pieza tiene cada daño para calcular el costo con el catálogo de precios.
               </p>
@@ -301,9 +270,29 @@ export default function ResultadoCotizacionPage() {
 
               {errorEstimacion && <Info severity="error">{errorEstimacion}</Info>}
 
+              {resumenAgregado && (
+                <div role="status" className={styles.resumenAgregado}>
+                  {resumenAgregado.agregadas.length > 0 && (
+                    <Info severity="success">
+                      Se agregaron al presupuesto: {resumenAgregado.agregadas.join(", ")}.
+                    </Info>
+                  )}
+                  {resumenAgregado.sinCatalogo.length > 0 && (
+                    <Info severity="warning">
+                      {vehiculoId === null
+                        ? "Selecciona el vehículo en «1. Datos del siniestro» para cargar sus piezas y poder agregarlas."
+                        : `No encontramos en el catálogo de tu vehículo: ${resumenAgregado.sinCatalogo.join(", ")}. Agrégalas manualmente en «2. Detalle de Piezas».`}
+                    </Info>
+                  )}
+                </div>
+              )}
+
               <div className={styles.acciones}>
                 <Button color="green" onClick={calcular} disabled={asignados === 0 || calculando}>
                   {calculando ? "Calculando…" : estimacion ? "Recalcular estimado" : "Calcular estimado"}
+                </Button>
+                <Button color="yellow" onClick={agregarAlPresupuesto} disabled={asignados === 0 || calculando}>
+                  Agregar al presupuesto
                 </Button>
                 <Button color="orange" onClick={nuevaFoto} disabled={calculando}>
                   Analizar otra foto
@@ -324,6 +313,6 @@ export default function ResultadoCotizacionPage() {
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }

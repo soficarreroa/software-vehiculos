@@ -8,6 +8,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { authenticatedFetch, readApiError } from '@/app/lib/api/client';
 import { getAuthenticatedVehicles, type Vehicle } from '@/app/lib/api/vehicles';
+import type { HallazgoFoto, ResultadoAgregar } from '@/app/types/cotizacionResultado';
+import AnalisisFoto from './Resultados/AnalisisFoto';
+import { etiquetaPresupuesto, normalizarNombre } from './Resultados/ResultadoCotizacion.utils';
 
 // Configuración de etiquetas: label (visual), emoji (interfaz), valor (base de datos)
 const ETIQUETAS_DANOS = [
@@ -97,6 +100,51 @@ export default function CotizacionPage() {
         descripcion: "" // Inicia vacío para la base de datos
       }]);
     }
+  };
+
+  // Busca la pieza del catálogo del vehículo por nombre (igual, o única coincidencia parcial)
+  const buscarPiezaCatalogo = (nombre: string): Pieza | undefined => {
+    const buscado = normalizarNombre(nombre);
+    const exacta = piezasDisponibles.find(p => normalizarNombre(p.nombre) === buscado);
+    if (exacta) return exacta;
+    const parciales = piezasDisponibles.filter(p => normalizarNombre(p.nombre).includes(buscado));
+    return parciales.length === 1 ? parciales[0] : undefined;
+  };
+
+  // Pasa al presupuesto las piezas confirmadas en el análisis con foto
+  const agregarDesdeFoto = (hallazgos: HallazgoFoto[]): ResultadoAgregar => {
+    const agregadas: string[] = [];
+    const sinCatalogo: string[] = [];
+    let siguiente = [...items];
+
+    for (const { pieza: nombre, tipos } of hallazgos) {
+      const pieza = buscarPiezaCatalogo(nombre);
+      if (!pieza) {
+        sinCatalogo.push(nombre);
+        continue;
+      }
+      const etiquetas = [...new Set(tipos.map(etiquetaPresupuesto).filter((e): e is string => e !== null))];
+      const existente = siguiente.findIndex(i => i.pieza_id === pieza.id);
+
+      if (existente >= 0) {
+        const actuales = siguiente[existente].descripcion
+          ? siguiente[existente].descripcion.split(', ').filter(t => t.trim() !== '')
+          : [];
+        const unidas = [...new Set([...actuales, ...etiquetas])].join(', ');
+        siguiente = siguiente.map((i, idx) => (idx === existente ? { ...i, descripcion: unidas } : i));
+      } else {
+        siguiente.push({
+          pieza_id: pieza.id,
+          nombre: pieza.nombre,
+          cantidad: 1,
+          descripcion: etiquetas.join(', '),
+        });
+      }
+      agregadas.push(pieza.nombre);
+    }
+
+    setItems(siguiente);
+    return { agregadas, sinCatalogo };
   };
 
   const eliminarItem = (index: number) => {
@@ -263,6 +311,11 @@ const enviarCotizacion = async () => {
         <h1>📝 Generador de Cotizaciones</h1>
         <p>Selecciona un vehículo y las piezas afectadas para el reporte.</p>
       </header>
+
+      <AnalisisFoto
+        vehiculoId={typeof selectedVehicleId === 'number' ? selectedVehicleId : null}
+        onAgregarAlPresupuesto={agregarDesdeFoto}
+      />
 
       <div className={styles.grid}>
         {/* LADO IZQUIERDO: Info General */}
