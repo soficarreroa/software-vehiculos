@@ -6,9 +6,9 @@ import {
   COLOR_SEVERIDAD,
   NOMBRE_SEVERIDAD,
   NOMBRE_TIPO_DANO,
-} from "./AnalisisDanos.constants";
-import type { ResultadoAnalisis as Resultado } from "./AnalisisDanos.service";
-import styles from "./AnalisisDanosPage.module.css";
+} from "./AnalisisFoto.constants";
+import type { ResultadoAnalisis as Resultado } from "./AnalisisFoto.service";
+import styles from "./AnalisisFoto.module.css";
 
 export default function ResultadoAnalisis({ resultado }: { resultado: Resultado }) {
   const danos = resultado.danos_detectados;
@@ -22,10 +22,10 @@ export default function ResultadoAnalisis({ resultado }: { resultado: Resultado 
   }
 
   return (
-    <section className={styles.resultado} aria-label="Resultado del análisis">
-      <h2 className={styles.resultadoTitulo}>
+    <section className={styles.resultado} aria-label="Resultado del análisis de la foto">
+      <h3 className={styles.resultadoTitulo}>
         {danos.length === 1 ? "Se detectó 1 daño" : `Se detectaron ${danos.length} daños`}
-      </h2>
+      </h3>
 
       <ul className={styles.listaDanos}>
         {danos.map((dano, indice) => (
@@ -48,13 +48,6 @@ export default function ResultadoAnalisis({ resultado }: { resultado: Resultado 
           </li>
         ))}
       </ul>
-
-      {/* TODO (tarea #38, Sofia): aquí va el costo estimado total cuando exista el cálculo.
-          Hasta entonces se deja este espacio reservado. */}
-      <div className={styles.costo}>
-        <div className={styles.costoTitulo}>Costo estimado</div>
-        <p className={styles.costoTexto}>El estimado de costo estará disponible próximamente.</p>
-      </div>
     </section>
   );
 }

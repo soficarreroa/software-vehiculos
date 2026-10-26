@@ -1,5 +1,5 @@
 import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
-import { ERROR_MESSAGES } from "./AnalisisDanos.constants";
+import { ERROR_MESSAGES } from "./AnalisisFoto.constants";
 
 export interface DanoDetectado {
   tipo_dano: string;

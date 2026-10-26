@@ -10,7 +10,6 @@ const menuItems = [
   { label: "Inicio", href: "/" },
   { label: "Mis Vehículos", href: "/mis-vehiculos" },
   { label: "Cotización", href: "/cotizacion" },
-  { label: "Analizar daños", href: "/analisis-danos" },
   { label: "Historial", href: "/historial" },
   { label: "Talleres Aliados", href: "/talleres-aliados" },
   { label: "Marco Legal", href: "/marco-legal" },

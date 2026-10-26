@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { authenticatedFetch, readApiError } from '@/app/lib/api/client';
 import { getAuthenticatedVehicles, type Vehicle } from '@/app/lib/api/vehicles';
+import AnalisisFoto from './AnalisisFoto/AnalisisFoto';
 
 // Configuración de etiquetas: label (visual), emoji (interfaz), valor (base de datos)
 const ETIQUETAS_DANOS = [
@@ -43,6 +44,8 @@ export default function CotizacionPage() {
   const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split('T')[0]);
   
   const [items, setItems] = useState<ItemSeleccionado[]>([]);
+  // Etiquetas de daño sugeridas por el análisis de la foto (solo se marcan, no se activan solas)
+  const [etiquetasSugeridas, setEtiquetasSugeridas] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 1. Cargar vehículos
@@ -97,6 +100,10 @@ export default function CotizacionPage() {
         descripcion: "" // Inicia vacío para la base de datos
       }]);
     }
+  };
+
+  const agregarANotas = (texto: string) => {
+    setObservaciones(prev => (prev.trim() ? `${prev.trim()}\n${texto}` : texto));
   };
 
   const eliminarItem = (index: number) => {
@@ -302,6 +309,14 @@ const enviarCotizacion = async () => {
               onChange={(e) => setObservaciones(e.target.value)}
             />
           </div>
+
+          <div className={styles.formGroup}>
+            <label>Foto del daño (opcional)</label>
+            <AnalisisFoto
+              onEtiquetasSugeridas={setEtiquetasSugeridas}
+              onAgregarANotas={agregarANotas}
+            />
+          </div>
         </div>
 
         {/* LADO DERECHO: Piezas y Daños */}
@@ -348,10 +363,11 @@ const enviarCotizacion = async () => {
                         <button
                           key={tag.valor}
                           type="button"
-                          className={`${styles.tagButton} ${item.descripcion.includes(tag.valor) ? styles.tagActive : ""}`}
+                          className={`${styles.tagButton} ${item.descripcion.includes(tag.valor) ? styles.tagActive : ""} ${etiquetasSugeridas.includes(tag.valor) ? styles.tagSugerida : ""}`}
+                          title={etiquetasSugeridas.includes(tag.valor) ? "Detectado en la foto" : undefined}
                           onClick={() => toggleEtiqueta(index, tag.valor)}
                         >
-                          {tag.emoji} {tag.label}
+                          {etiquetasSugeridas.includes(tag.valor) && "✨ "}{tag.emoji} {tag.label}
                         </button>
                       ))}
                     </div>
