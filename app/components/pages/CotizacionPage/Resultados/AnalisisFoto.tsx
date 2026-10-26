@@ -21,13 +21,10 @@ import ErrorResultado from "./ErrorResultado";
 import FotoAnalizada from "./FotoAnalizada";
 import ListaDanos from "./ListaDanos";
 import ResumenCosto from "./ResumenCosto";
-import { ANALISIS_DEMO, ESTIMACION_DEMO, FOTO_DEMO } from "./ResultadoCotizacion.mock";
 import { buscarPiezaCatalogo, categoriaEstimador, precioCatalogo } from "./ResultadoCotizacion.utils";
 import styles from "./ResultadoCotizacion.module.css";
 
 type Fase = "inicio" | "analizando" | "resultado" | "error";
-
-const MODO_DESARROLLO = process.env.NODE_ENV !== "production";
 
 interface AnalisisFotoProps {
   /** Vehículo elegido en «1. Datos del siniestro»; null si todavía no eligió. */
@@ -122,13 +119,6 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
     }
   };
 
-  const cargarDemo = () => {
-    reiniciarResultados();
-    reemplazarUrl(FOTO_DEMO);
-    setAnalisis(ANALISIS_DEMO);
-    setFase("resultado");
-  };
-
   const asignarPieza = (indice: number, pieza: string) => {
     setAsignaciones((prev) => {
       const siguiente = { ...prev };
@@ -143,16 +133,9 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
   };
 
   const asignados = Object.keys(asignaciones).length;
-  const esDemo = fotoUrl === FOTO_DEMO;
 
   const calcular = async () => {
     if (!analisis || asignados === 0) return;
-
-    if (esDemo) {
-      setEstimacion(ESTIMACION_DEMO);
-      setExtras([]);
-      return;
-    }
 
     const lista = Object.entries(asignaciones).map(([indice, pieza]) => ({
       indice: Number(indice),
@@ -261,11 +244,6 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
             <Button color="green" onClick={analizar} disabled={!foto || fase === "analizando"}>
               {fase === "analizando" ? "Analizando…" : "Analizar daños"}
             </Button>
-            {MODO_DESARROLLO && (
-              <Button color="yellow" onClick={cargarDemo} disabled={fase === "analizando"}>
-                Ver ejemplo (solo desarrollo)
-              </Button>
-            )}
           </div>
 
           {fase === "analizando" && (
