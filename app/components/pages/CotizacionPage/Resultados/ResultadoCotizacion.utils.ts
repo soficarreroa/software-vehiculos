@@ -77,3 +77,20 @@ export function buscarPiezaCatalogo<T extends { nombre: string }>(nombre: string
 /** Precio de catálogo completo de una pieza (repuesto + mano de obra + pintura). */
 export const precioCatalogo = (p: PiezaCatalogo): number =>
   (p.precio_repuesto ?? 0) + (p.precio_mano_obra ?? 0) + (p.precio_pintura ?? 0);
+
+/** Tipos de daño que ya dicen cuál es la pieza (un vidrio roto es el vidrio, no un panel de carrocería). */
+const PIEZA_IMPLICITA: Record<string, RegExp> = {
+  vidrio_roto: /(vidrio|parabrisas|cristal|luna|ventanilla|medall?on|luneta)/,
+  luz_rota: /(faro|farola|farol|luz|stop|exploradora|direccional)/,
+  llanta_baja: /(llanta|neumatico|rin|rueda)/,
+};
+
+/**
+ * Piezas del catálogo que corresponden a un tipo de daño que ya identifica la pieza.
+ * null si el tipo no la identifica (rayón, abolladura, grieta...): ahí el usuario debe elegirla.
+ */
+export function piezasDelTipoDano<T extends { nombre: string }>(tipo: string | null, catalogo: T[]): T[] | null {
+  const patron = tipo ? PIEZA_IMPLICITA[tipo] : undefined;
+  if (!patron) return null;
+  return catalogo.filter((p) => patron.test(normalizarNombre(p.nombre)));
+}

@@ -559,3 +559,9 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.piezaFija {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}

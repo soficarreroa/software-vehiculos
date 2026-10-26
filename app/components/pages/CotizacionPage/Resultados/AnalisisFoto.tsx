@@ -21,7 +21,7 @@ import ErrorResultado from "./ErrorResultado";
 import FotoAnalizada from "./FotoAnalizada";
 import ListaDanos from "./ListaDanos";
 import ResumenCosto from "./ResumenCosto";
-import { buscarPiezaCatalogo, categoriaEstimador, precioCatalogo } from "./ResultadoCotizacion.utils";
+import { buscarPiezaCatalogo, categoriaEstimador, piezasDelTipoDano, precioCatalogo } from "./ResultadoCotizacion.utils";
 import styles from "./ResultadoCotizacion.module.css";
 
 type Fase = "inicio" | "analizando" | "resultado" | "error";
@@ -111,6 +111,13 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
         setFase("error");
         return;
       }
+      // Si el tipo de daño ya identifica la pieza (p. ej. vidrio roto) y hay una sola en el catálogo, se asigna sola
+      const automaticas: Record<number, string> = {};
+      respuesta.danos_detectados.forEach((d, i) => {
+        const piezas = piezasDelTipoDano(d.tipo_dano, catalogo);
+        if (piezas && piezas.length === 1) automaticas[i] = piezas[0].nombre;
+      });
+      setAsignaciones(automaticas);
       setAnalisis(respuesta);
       setFase("resultado");
     } catch (err) {

@@ -9,7 +9,14 @@ import type {
   TipoEstablecimiento,
 } from "@/app/types/cotizacionResultado";
 import { COLOR_SEVERIDAD, ETIQUETAS_SEVERIDAD, PIEZAS_ESTIMABLES } from "./ResultadoCotizacion.constants";
-import { etiquetaDano, formatCop, formatPorcentaje, formatRango, normalizarNombre } from "./ResultadoCotizacion.utils";
+import {
+  etiquetaDano,
+  formatCop,
+  formatPorcentaje,
+  formatRango,
+  normalizarNombre,
+  piezasDelTipoDano,
+} from "./ResultadoCotizacion.utils";
 import styles from "./ResultadoCotizacion.module.css";
 
 interface ListaDanosProps {
@@ -74,6 +81,7 @@ export default function ListaDanos({
         const severidad = dano.severidad;
         const estado = estadoDano(i);
         const idSelect = `pieza-dano-${i}`;
+        const propias = piezasDelTipoDano(dano.tipo_dano, catalogo); // null: el tipo de daño no dice la pieza
         return (
           <li
             key={`${dano.clase_yolo}-${i}`}
@@ -108,36 +116,57 @@ export default function ListaDanos({
                 </div>
               </div>
 
-              <div className={styles.piezaFila}>
-                <label htmlFor={idSelect} className={styles.piezaLabel}>
-                  Pieza afectada
-                </label>
-                <select
-                  id={idSelect}
-                  className={styles.select}
-                  value={asignaciones[i] ?? ""}
-                  disabled={deshabilitado}
-                  onChange={(e) => onAsignar(i, e.target.value)}
-                >
-                  <option value="">Selecciona la pieza…</option>
-                  <optgroup label="Categorías con rango de precios">
-                    {PIEZAS_ESTIMABLES.map((pieza) => (
-                      <option key={pieza} value={pieza}>
-                        {pieza}
-                      </option>
-                    ))}
-                  </optgroup>
-                  {piezasVehiculo.length > 0 && (
-                    <optgroup label="Piezas de tu vehículo (precio de catálogo)">
-                      {piezasVehiculo.map((pieza) => (
+              {propias && propias.length === 1 ? (
+                <p className={styles.piezaFija}>
+                  <span className={styles.piezaLabel}>Pieza afectada</span> {propias[0].nombre}
+                </p>
+              ) : propias && propias.length === 0 ? (
+                <p className={styles.estadoAviso}>
+                  Este daño no tiene una pieza equivalente en el catálogo de tu vehículo, por eso no se incluye en el
+                  cálculo.
+                </p>
+              ) : (
+                <div className={styles.piezaFila}>
+                  <label htmlFor={idSelect} className={styles.piezaLabel}>
+                    {propias ? `¿Cuál de estas piezas? (${etiquetaDano(dano.tipo_dano).toLowerCase()})` : "Pieza afectada"}
+                  </label>
+                  <select
+                    id={idSelect}
+                    className={styles.select}
+                    value={asignaciones[i] ?? ""}
+                    disabled={deshabilitado}
+                    onChange={(e) => onAsignar(i, e.target.value)}
+                  >
+                    <option value="">Selecciona la pieza…</option>
+                    {propias ? (
+                      propias.map((pieza) => (
                         <option key={pieza.id} value={pieza.nombre}>
                           {pieza.nombre}
                         </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
+                      ))
+                    ) : (
+                      <>
+                        <optgroup label="Categorías con rango de precios">
+                          {PIEZAS_ESTIMABLES.map((pieza) => (
+                            <option key={pieza} value={pieza}>
+                              {pieza}
+                            </option>
+                          ))}
+                        </optgroup>
+                        {piezasVehiculo.length > 0 && (
+                          <optgroup label="Piezas de tu vehículo (precio de catálogo)">
+                            {piezasVehiculo.map((pieza) => (
+                              <option key={pieza.id} value={pieza.nombre}>
+                                {pieza.nombre}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </>
+                    )}
+                  </select>
+                </div>
+              )}
 
               {estado && (
                 <p className={estado.tipo === "ok" ? styles.estadoOk : styles.estadoAviso}>
