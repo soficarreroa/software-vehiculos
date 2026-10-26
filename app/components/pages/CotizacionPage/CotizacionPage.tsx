@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import styles from './CotizacionPage.module.css';
 import Button from '@/app/components/ui/Button/Button';
+import Info from '@/app/components/ui/Info/Info';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -37,18 +39,34 @@ interface ItemSeleccionado {
   descripcion: string;
 }
 
+const PIEZAS_VACIAS: Pieza[] = [];
+
+interface CotizacionGuardada {
+  id: number | null;
+  total: number;
+  piezas: number;
+  vehiculo: Vehicle;
+}
+
 export default function CotizacionPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [piezasCargadas, setPiezasCargadas] = useState<Pieza[]>([]);
-  
+  const [intentoPiezas, setIntentoPiezas] = useState(0);
+  const [resultadoPiezas, setResultadoPiezas] = useState<{ clave: string; data: Pieza[]; error: string | null } | null>(null);
+
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | 'Selected'>('Selected');
-  // Sin vehículo seleccionado no hay piezas disponibles (valor derivado, sin setState en el efecto)
-  const piezasDisponibles = typeof selectedVehicleId === 'number' ? piezasCargadas : [];
+  // Piezas del vehículo elegido. Todo es derivado: sin vehículo no hay piezas, y mientras llega la respuesta se está cargando
+  const clavePiezas = typeof selectedVehicleId === 'number' ? `${selectedVehicleId}-${intentoPiezas}` : null;
+  const piezasListas = resultadoPiezas && resultadoPiezas.clave === clavePiezas ? resultadoPiezas : null;
+  const piezasDisponibles = piezasListas?.data ?? PIEZAS_VACIAS;
+  const cargandoPiezas = clavePiezas !== null && piezasListas === null;
+  const errorPiezas = piezasListas?.error ?? null;
   const [observaciones, setObservaciones] = useState('');
   const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split('T')[0]);
   
   const [items, setItems] = useState<ItemSeleccionado[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'error' | 'success'; texto: string } | null>(null);
+  const [guardada, setGuardada] = useState<CotizacionGuardada | null>(null);
 
   // 1. Cargar vehículos
   useEffect(() => {
@@ -67,32 +85,37 @@ export default function CotizacionPage() {
 
   // 2. Cargar piezas por vehículo
   useEffect(() => {
-    if (typeof selectedVehicleId === 'number') {
-      let activo = true;
-      authenticatedFetch(`/api/v1/vehiculos/${selectedVehicleId}/piezas-disponibles`)
-        .then(async (res) => {
-          if (!res.ok) throw await readApiError(res, 'No se pudieron cargar las piezas disponibles.');
-          return res.json();
-        })
-        .then((data: Pieza[]) => {
-          if (activo) setPiezasCargadas(Array.isArray(data) ? data : []);
-        })
-        .catch(err => {
-          if (activo) {
-            setPiezasCargadas([]);
-            console.error("Error cargando piezas:", err);
-          }
-        });
-      return () => {
-        activo = false;
-      };
-    }
-  }, [selectedVehicleId]);
+    if (clavePiezas === null || typeof selectedVehicleId !== 'number') return;
+    let activo = true;
+    authenticatedFetch(`/api/v1/vehiculos/${selectedVehicleId}/piezas-disponibles`)
+      .then(async (res) => {
+        if (!res.ok) throw await readApiError(res, 'No se pudieron cargar las piezas disponibles.');
+        return res.json();
+      })
+      .then((data: Pieza[]) => {
+        if (activo) setResultadoPiezas({ clave: clavePiezas, data: Array.isArray(data) ? data : [], error: null });
+      })
+      .catch((err: unknown) => {
+        if (!activo) return;
+        console.error("Error cargando piezas:", err);
+        const texto = err instanceof Error ? err.message : 'No se pudieron cargar las piezas disponibles.';
+        setResultadoPiezas({ clave: clavePiezas, data: [], error: texto });
+      });
+    return () => {
+      activo = false;
+    };
+  }, [clavePiezas, selectedVehicleId]);
 
   const agregarPieza = (piezaId: string) => {
     if (!piezaId) return;
     const pieza = piezasDisponibles.find(p => p.id === parseInt(piezaId));
     if (pieza) {
+      if (items.some(i => i.pieza_id === pieza.id)) {
+        setMensaje({ tipo: 'error', texto: `«${pieza.nombre}» ya está en la cotización. Cambia su cantidad si necesitas más de una.` });
+        return;
+      }
+      setMensaje(null);
+      setGuardada(null);
       setItems([...items, {
         pieza_id: pieza.id,
         nombre: pieza.nombre,
@@ -138,6 +161,8 @@ export default function CotizacionPage() {
     }
 
     setItems(siguiente);
+    setMensaje(null);
+    setGuardada(null);
     return { agregadas, sinCatalogo };
   };
 
@@ -166,6 +191,12 @@ export default function CotizacionPage() {
     setItems(newItems);
   };
 
+
+const precioUnitario = (piezaId: number): number => {
+  const info = piezasDisponibles.find(p => p.id === piezaId);
+  return (info?.precio_repuesto ?? 0) + (info?.precio_mano_obra ?? 0) + (info?.precio_pintura ?? 0);
+};
+const totalItems = items.reduce((suma, i) => suma + precioUnitario(i.pieza_id) * i.cantidad, 0);
 
 const generarPDF = (vehiculo: Vehicle) => {
   const doc = new jsPDF();
@@ -239,7 +270,15 @@ const generarPDF = (vehiculo: Vehicle) => {
 
 
 const enviarCotizacion = async () => {
-  if (typeof selectedVehicleId !== 'number' || items.length === 0) return;
+  setMensaje(null);
+  if (typeof selectedVehicleId !== 'number') {
+    setMensaje({ tipo: 'error', texto: 'Selecciona primero el vehículo en «1. Datos del siniestro».' });
+    return;
+  }
+  if (items.length === 0) {
+    setMensaje({ tipo: 'error', texto: 'Agrega al menos una pieza en «2. Detalle de piezas» (o pásalas desde el análisis con foto).' });
+    return;
+  }
 
   setLoading(true);
   const payload = {
@@ -261,23 +300,19 @@ const enviarCotizacion = async () => {
     });
 
     if (response.ok) {
-      // 1. Buscamos los datos del vehículo para el PDF
+      const respuesta = (await response.json().catch(() => null)) as { id?: number; monto_total?: number } | null;
       const vehiculoActual = vehicles.find(v => v.id === selectedVehicleId);
-      
-      // 2. Generamos el PDF si encontramos el vehículo
       if (vehiculoActual) {
         generarPDF(vehiculoActual);
+        setGuardada({
+          id: respuesta?.id ?? null,
+          total: respuesta?.monto_total ?? totalItems,
+          piezas: items.length,
+          vehiculo: vehiculoActual,
+        });
       }
-
-      // 3. Notificamos al usuario
-      alert("✅ Cotización guardada y PDF generado correctamente");
-
-      // 4. Limpiamos el formulario
       setItems([]);
       setObservaciones("");
-      // Opcional: podrías resetear el vehículo seleccionado si lo deseas
-      // setSelectedVehicleId('Selected'); 
-      
     } else {
       const apiError = await readApiError(
         response,
@@ -287,17 +322,22 @@ const enviarCotizacion = async () => {
             ? "Revisa los datos de la cotización."
             : "Error al procesar la cotización en el servidor",
       );
-      alert(`❌ ${apiError.message}`);
+      setMensaje({ tipo: 'error', texto: apiError.message });
     }
   } catch (error) {
     console.error("Error conexión API:", error);
-    alert("❌ Error crítico: No se pudo conectar con el servidor");
+    setMensaje({ tipo: 'error', texto: 'No se pudo conectar con el servidor. Revisa que el backend esté en marcha e inténtalo de nuevo.' });
   } finally {
     setLoading(false);
   }
 };
 
+const cambiarCantidad = (index: number, valor: string) => {
+  const n = Math.max(1, Math.min(99, parseInt(valor, 10) || 1));
+  setItems(items.map((it, i) => (i === index ? { ...it, cantidad: n } : it)));
+};
 
+const formatoCop = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
 
   return (
     <div className={styles.container}>
@@ -312,7 +352,7 @@ const enviarCotizacion = async () => {
         onAgregarAlPresupuesto={agregarDesdeFoto}
       />
 
-      <div className={styles.grid}>
+      <div className={styles.grid} id="seccion-cotizacion">
         {/* LADO IZQUIERDO: Info General */}
         <div className={styles.stepCard}>
           <h2 className={styles.stepTitle}>1. Datos del Siniestro</h2>
@@ -358,20 +398,44 @@ const enviarCotizacion = async () => {
           
           <div className={styles.formGroup}>
             <label>Buscar Pieza</label>
-            <select 
-              className={styles.select} 
-              disabled={!piezasDisponibles.length}
+            <select
+              className={styles.select}
+              disabled={cargandoPiezas || piezasDisponibles.length === 0}
               onChange={(e) => {
                 agregarPieza(e.target.value);
                 e.target.value = "";
               }}
               value=""
             >
-              <option value="">-- Añadir pieza afectada --</option>
+              <option value="">
+                {typeof selectedVehicleId !== 'number'
+                  ? '-- Primero selecciona un vehículo --'
+                  : cargandoPiezas
+                    ? 'Cargando piezas…'
+                    : piezasDisponibles.length === 0
+                      ? '-- Sin piezas disponibles --'
+                      : '-- Añadir pieza afectada --'}
+              </option>
               {piezasDisponibles.map(p => (
                 <option key={p.id} value={p.id}>{p.nombre}</option>
               ))}
             </select>
+            {typeof selectedVehicleId !== 'number' && (
+              <p className={styles.hint}>Elige el vehículo en «1. Datos del siniestro» para ver sus piezas.</p>
+            )}
+            {errorPiezas && (
+              <Info severity="error">
+                {errorPiezas}{' '}
+                <button type="button" className={styles.btnLink} onClick={() => setIntentoPiezas(n => n + 1)}>
+                  Reintentar
+                </button>
+              </Info>
+            )}
+            {!errorPiezas && !cargandoPiezas && typeof selectedVehicleId === 'number' && piezasDisponibles.length === 0 && (
+              <Info severity="warning">
+                Este vehículo no tiene piezas con precio en el catálogo. Pide que carguen el catálogo de precios (tabla catalogo_precios).
+              </Info>
+            )}
           </div>
 
           <div className={styles.listContainer}>
@@ -384,6 +448,18 @@ const enviarCotizacion = async () => {
                 <div key={index} className={styles.itemCard}>
                   <div className={styles.itemHeader}>
                     <strong>⚙️ {item.nombre}</strong>
+                    <label className={styles.cantidad}>
+                      Cant.
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={item.cantidad}
+                        onChange={(e) => cambiarCantidad(index, e.target.value)}
+                        className={styles.inputCantidad}
+                      />
+                    </label>
+                    <span className={styles.precioItem}>{formatoCop(precioUnitario(item.pieza_id) * item.cantidad)}</span>
                     <button onClick={() => eliminarItem(index)} className={styles.btnDelete}>
                       Remover
                     </button>
@@ -423,13 +499,29 @@ const enviarCotizacion = async () => {
         </div>
       </div>
 
+      <section className={styles.resumenFinal} aria-live="polite">
+        {items.length > 0 && (
+          <p className={styles.totalLinea}>
+            {items.length} {items.length === 1 ? 'pieza' : 'piezas'} · Total estimado: <strong>{formatoCop(totalItems)}</strong>
+          </p>
+        )}
+        {mensaje && <Info severity={mensaje.tipo}>{mensaje.texto}</Info>}
+        {guardada && (
+          <Info severity="success">
+            Cotización{guardada.id ? ` #${guardada.id}` : ''} guardada para {guardada.vehiculo.marca} {guardada.vehiculo.modelo}
+            {' '}({guardada.piezas} {guardada.piezas === 1 ? 'pieza' : 'piezas'}, total {formatoCop(guardada.total)}). El PDF se descargó
+            automáticamente. <Link href="/historial" className={styles.btnLink}>Ver en mi historial</Link>
+          </Info>
+        )}
+      </section>
+
       <footer className={styles.actions}>
-        <Button 
-          color="green" 
-          onClick={enviarCotizacion} 
-          disabled={loading || items.length === 0}
+        <Button
+          color="green"
+          onClick={enviarCotizacion}
+          disabled={loading}
         >
-          {loading ? "Enviando..." : "Finalizar Cotización"}
+          {loading ? "Guardando…" : "Finalizar cotización y descargar PDF"}
         </Button>
       </footer>
     </div>

@@ -199,7 +199,7 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
       const extrasCalculados = [...porPieza.values()];
       if (!respuesta && extrasCalculados.length === 0) {
         setErrorEstimacion(
-          "No tenemos precio para esa pieza en el catálogo de tu vehículo. Elige otra pieza de la lista o agrégala manualmente en «2. Detalle de Piezas».",
+          "No tenemos precio para esa pieza en el catálogo de tu vehículo. Elige otra pieza de la lista o agrégala manualmente en «2. Detalle de piezas».",
         );
         return;
       }
@@ -222,7 +222,11 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
       porPieza.set(pieza, [...(porPieza.get(pieza) ?? []), tipo]);
     }
     const hallazgos: HallazgoFoto[] = [...porPieza].map(([pieza, tipos]) => ({ pieza, tipos }));
-    setResumenAgregado(onAgregarAlPresupuesto(hallazgos));
+    const resultado = onAgregarAlPresupuesto(hallazgos);
+    setResumenAgregado(resultado);
+    if (resultado.agregadas.length > 0) {
+      document.getElementById("seccion-cotizacion")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const hayFoto = fase !== "resultado";
@@ -235,7 +239,7 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
         </h2>
         <p className={styles.ayuda}>
           Sube o toma una foto del daño: detectamos los daños, estimamos el costo y puedes pasar las
-          piezas al presupuesto.
+          piezas a tu cotización.
         </p>
       </div>
 
@@ -312,7 +316,7 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
                 <div role="status" className={styles.resumenAgregado}>
                   {resumenAgregado.agregadas.length > 0 && (
                     <Info severity="success">
-                      Se agregaron al presupuesto: {resumenAgregado.agregadas.join(", ")}.
+                      Se pasaron a tu cotización: {resumenAgregado.agregadas.join(", ")}. Revisa «2. Detalle de piezas» y pulsa «Finalizar cotización» para guardarla y descargar el PDF.
                     </Info>
                   )}
                   {resumenAgregado.sinCatalogo.length > 0 && (
@@ -325,12 +329,17 @@ export default function AnalisisFoto({ vehiculoId, catalogo, onAgregarAlPresupue
                 </div>
               )}
 
+              <p className={styles.ayuda}>
+                <strong>Calcular estimado</strong> solo muestra un rango de precios. <strong>Pasar a mi cotización</strong>{" "}
+                copia estas piezas a la cotización de abajo, donde la guardas y descargas el PDF.
+              </p>
+
               <div className={styles.acciones}>
                 <Button color="green" onClick={calcular} disabled={asignados === 0 || calculando}>
                   {calculando ? "Calculando…" : estimacion ? "Recalcular estimado" : "Calcular estimado"}
                 </Button>
                 <Button color="yellow" onClick={agregarAlPresupuesto} disabled={asignados === 0 || calculando}>
-                  Agregar al presupuesto
+                  Pasar a mi cotización
                 </Button>
                 <Button color="orange" onClick={nuevaFoto} disabled={calculando}>
                   Analizar otra foto
