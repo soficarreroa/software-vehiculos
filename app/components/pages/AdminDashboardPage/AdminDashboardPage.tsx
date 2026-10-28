@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import Button from "../../ui/Button/Button";
+import { useState, useEffect } from "react";
 import Info from "../../ui/Info/Info";
-import Select from "../../ui/Select/Select";
-import Input from "../../ui/Input/Input";
-import Pill from "../../ui/Pill/Pill";
+import AdminTopbar from "./AdminTopbar";
+import AdminFilters from "./AdminFilters";
+import NotificationsModal from "./NotificationsModal";
 import styles from "./adminDashboardPage.module.css";
 import {
   adminService,
@@ -17,9 +15,16 @@ import {
   CatalogoPrecioAdmin,
 } from "./AdminDashboard.service";
 import { ERROR_MESSAGES, ROLE_OPTIONS, MONEDA_OPTIONS } from "./AdminDashboard.constants";
-
-const truncarId = (id: string) =>
-  id && id.length > 10 ? `${id.slice(0, 10)}...` : id ?? "-";
+import {
+  FILTROS_INICIALES,
+  ROL_LABELS,
+  TABS_ADMIN,
+  formatIdTaller,
+  formatMoneda,
+  unicosOrdenados,
+  type FiltrosAdmin,
+  type TabAdmin,
+} from "./AdminDashboard.utils";
 
 const rolePillClass = (rol: string) => {
   const variantes: Record<string, string> = {
@@ -29,11 +34,6 @@ const rolePillClass = (rol: string) => {
   };
   return `${styles.rolePill} ${variantes[rol] ?? ""}`;
 };
-
-const formatMoneda = (valor: number | null, moneda: string) =>
-  valor === null || valor === undefined
-    ? "—"
-    : `${new Intl.NumberFormat("es-CO").format(valor)} ${moneda}`;
 
 const NOMBRES_RECURSOS = {
   resumen: "el resumen general",
@@ -55,31 +55,6 @@ const FORM_PRECIO_INICIAL = {
   moneda: "COP",
 };
 
-interface CollapsibleSectionProps {
-  titulo: string;
-  abierta: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}
-
-const CollapsibleSection = ({ titulo, abierta, onToggle, children }: CollapsibleSectionProps) => (
-  <section className={styles.tableSection}>
-    <div
-      className={styles.sectionHeader}
-      role="button"
-      tabIndex={0}
-      onClick={onToggle}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onToggle();
-      }}
-    >
-      <h2 className={styles.sectionTitle}>{titulo}</h2>
-      {abierta ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-    </div>
-    {abierta && <div className={styles.sectionBody}>{children}</div>}
-  </section>
-);
-
 const AdminDashboardPage = () => {
   const [resumen, setResumen] = useState<ResumenAdmin | null>(null);
   const [talleres, setTalleres] = useState<TallerAdmin[]>([]);
@@ -92,69 +67,64 @@ const AdminDashboardPage = () => {
   const [cambiandoRolId, setCambiandoRolId] = useState<number | null>(null);
   const [cambiandoEstadoId, setCambiandoEstadoId] = useState<number | null>(null);
   const [rolSeleccionado, setRolSeleccionado] = useState<Record<number, string>>({});
-  const [busquedaUsuario, setBusquedaUsuario] = useState("");
-  const [busquedaTaller, setBusquedaTaller] = useState("");
-  const [busquedaCatalogo, setBusquedaCatalogo] = useState("");
   const [formPrecio, setFormPrecio] = useState(FORM_PRECIO_INICIAL);
   const [guardandoPrecio, setGuardandoPrecio] = useState(false);
   const [eliminandoPrecioId, setEliminandoPrecioId] = useState<number | null>(null);
-  const [seccionesAbiertas, setSeccionesAbiertas] = useState({
-    talleres: false,
-    usuarios: false,
-    catalogo: false,
-  });
 
-  const toggleSeccion = (seccion: keyof typeof seccionesAbiertas) => {
-    setSeccionesAbiertas((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
-  };
+  // Estado de la nueva interfaz
+  const [tabActiva, setTabActiva] = useState<TabAdmin>("talleres");
+  const [busqueda, setBusqueda] = useState("");
+  const [filtros, setFiltros] = useState<FiltrosAdmin>(FILTROS_INICIALES);
+  const [notifAbiertas, setNotifAbiertas] = useState(false);
+  const [notifVistas, setNotifVistas] = useState(0);
 
-useEffect(() => {
-  let obsoleto = false;
+  useEffect(() => {
+    let obsoleto = false;
 
-  const cargarDatos = async () => {
-    setCargando(true);
-    setError(null);
+    const cargarDatos = async () => {
+      setCargando(true);
+      setError(null);
 
-    const resultados = await Promise.allSettled([
-      adminService.getResumen(),
-      adminService.getTalleres(),
-      adminService.getUsuarios(),
-      adminService.getPiezas(),
-      adminService.getCatalogoPrecios(),
-    ]);
+      const resultados = await Promise.allSettled([
+        adminService.getResumen(),
+        adminService.getTalleres(),
+        adminService.getUsuarios(),
+        adminService.getPiezas(),
+        adminService.getCatalogoPrecios(),
+      ]);
 
-    if (obsoleto) return; // esta ejecución ya no es la más reciente, no pisar el estado
+      if (obsoleto) return; // esta ejecución ya no es la más reciente, no pisar el estado
 
-    const [resumenR, talleresR, usuariosR, piezasR, catalogoR] = resultados;
+      const [resumenR, talleresR, usuariosR, piezasR, catalogoR] = resultados;
 
-    if (resumenR.status === "fulfilled") setResumen(resumenR.value);
-    if (talleresR.status === "fulfilled") setTalleres(talleresR.value);
-    if (usuariosR.status === "fulfilled") setUsuarios(usuariosR.value);
-    if (piezasR.status === "fulfilled") setPiezas(piezasR.value);
-    if (catalogoR.status === "fulfilled") setCatalogoPrecios(catalogoR.value);
+      if (resumenR.status === "fulfilled") setResumen(resumenR.value);
+      if (talleresR.status === "fulfilled") setTalleres(talleresR.value);
+      if (usuariosR.status === "fulfilled") setUsuarios(usuariosR.value);
+      if (piezasR.status === "fulfilled") setPiezas(piezasR.value);
+      if (catalogoR.status === "fulfilled") setCatalogoPrecios(catalogoR.value);
 
-    const claves = ["resumen", "talleres", "usuarios", "piezas", "catalogo"] as const;
-    const fallidos = resultados
-      .map((r, i) => (r.status === "rejected" ? claves[i] : null))
-      .filter((clave): clave is (typeof claves)[number] => clave !== null);
+      const claves = ["resumen", "talleres", "usuarios", "piezas", "catalogo"] as const;
+      const fallidos = resultados
+        .map((r, i) => (r.status === "rejected" ? claves[i] : null))
+        .filter((clave): clave is (typeof claves)[number] => clave !== null);
 
-    if (fallidos.length > 0) {
-      resultados.forEach((r) => {
-        if (r.status === "rejected") console.error(r.reason);
-      });
-      const nombres = fallidos.map((clave) => NOMBRES_RECURSOS[clave]).join(", ");
-      setError(`No se pudo cargar ${nombres}. El resto de la información sí está actualizada.`);
-    }
+      if (fallidos.length > 0) {
+        resultados.forEach((r) => {
+          if (r.status === "rejected") console.error(r.reason);
+        });
+        const nombres = fallidos.map((clave) => NOMBRES_RECURSOS[clave]).join(", ");
+        setError(`No se pudo cargar ${nombres}. El resto de la información sí está actualizada.`);
+      }
 
-    setCargando(false);
-  };
+      setCargando(false);
+    };
 
-  cargarDatos();
+    cargarDatos();
 
-  return () => {
-    obsoleto = true;
-  };
-}, []);
+    return () => {
+      obsoleto = true;
+    };
+  }, []);
 
   const handleVerificarTaller = async (tallerId: number, verificado: boolean) => {
     setActualizandoTallerId(tallerId);
@@ -307,29 +277,77 @@ useEffect(() => {
     }
   };
 
+  // ---- Filtros y búsqueda global ------------------------------------------
+
+  const handleFiltroChange = (campo: keyof FiltrosAdmin, valor: string) =>
+    setFiltros((prev) => ({ ...prev, [campo]: valor }));
+
+  const limpiarFiltros = () => {
+    setFiltros(FILTROS_INICIALES);
+    setBusqueda("");
+  };
+
+  const texto = busqueda.trim().toLowerCase();
+  const coincide = (...campos: (string | number | null | undefined)[]) =>
+    !texto || campos.some((c) => String(c ?? "").toLowerCase().includes(texto));
+
   const talleresFiltrados = [...talleres]
-    .filter((t) => t.nombre.toLowerCase().includes(busquedaTaller.trim().toLowerCase()))
+    .filter((t) => {
+      const estado = t.verificado ? "verificado" : "pendiente";
+      if ((filtros.estado === "pendiente" || filtros.estado === "verificado") && estado !== filtros.estado)
+        return false;
+      if (filtros.categoria && t.categoria !== filtros.categoria) return false;
+      if (filtros.dueno && t.propietario_id !== filtros.dueno) return false;
+      return coincide(
+        t.nombre,
+        t.categoria,
+        t.id,
+        formatIdTaller(t.id),
+        t.propietario_id,
+        t.direccion,
+        t.email
+      );
+    })
     .sort((a, b) => Number(a.verificado) - Number(b.verificado));
 
-  const usuariosFiltrados = usuarios.filter((u) =>
-    u.nombre_completo.toLowerCase().includes(busquedaUsuario.trim().toLowerCase())
-  );
+  const usuariosFiltrados = usuarios.filter((u) => {
+    if (filtros.estado === "activo" && !u.activo) return false;
+    if (filtros.estado === "inactivo" && u.activo) return false;
+    if (filtros.rol && u.rol !== filtros.rol) return false;
+    return coincide(u.nombre_completo, u.correo, u.rol, ROL_LABELS[u.rol], u.id);
+  });
 
   const catalogoFiltrado = catalogoPrecios.filter((precio) => {
-  const texto = busquedaCatalogo.trim().toLowerCase();
-  if (!texto) return true;
-  return (
-    (precio.pieza_nombre ?? "").toLowerCase().includes(texto) ||
-    (precio.marca ?? "").toLowerCase().includes(texto) ||
-    (precio.modelo ?? "").toLowerCase().includes(texto) ||
-    (precio.moneda ?? "").toLowerCase().includes(texto) ||
-    String(precio.ano_desde ?? "").includes(texto) ||
-    String(precio.ano_hasta ?? "").includes(texto)
-  );
-});
+    if (filtros.marca && precio.marca !== filtros.marca) return false;
+    return coincide(
+      precio.pieza_nombre,
+      precio.marca,
+      precio.modelo,
+      precio.moneda,
+      precio.ano_desde,
+      precio.ano_hasta
+    );
+  });
+
+  const marcasDisponibles = unicosOrdenados(catalogoPrecios.map((p) => p.marca));
+  const duenosDisponibles = unicosOrdenados(talleres.map((t) => t.propietario_id));
+  const categoriasDisponibles = unicosOrdenados(talleres.map((t) => t.categoria));
+
+  // ---- Notificaciones -----------------------------------------------------
+
+  const talleresPendientes =
+    talleres.length > 0
+      ? talleres.filter((t) => !t.verificado).length
+      : resumen?.talleres_pendientes ?? 0;
+  const hayNotificaciones = talleresPendientes > notifVistas;
+
+  const cerrarNotificaciones = () => {
+    setNotifAbiertas(false);
+    setNotifVistas(talleresPendientes);
+  };
 
   const piezaOptions = [
-    { value: "", label: "Selecciona una pieza" },
+    { value: "", label: "Pieza (ej: Puerta Izq)" },
     ...piezas.map((p) => ({
       value: String(p.id),
       label: p.codigo ? `${p.nombre} (${p.codigo})` : p.nombre,
@@ -337,356 +355,426 @@ useEffect(() => {
   ];
 
   return (
-    <main className={styles.main}>
-      <div className={styles.headerRow}>
-        <div>
-          <h1 className={styles.title}>Panel de Administración Global</h1>
+    <div className={styles.page}>
+      <header className={styles.topbar}>
+        <AdminTopbar
+          busqueda={busqueda}
+          onBusquedaChange={setBusqueda}
+          hayNotificaciones={hayNotificaciones}
+          onAbrirNotificaciones={() => setNotifAbiertas(true)}
+        />
+        <AdminFilters
+          filtros={filtros}
+          tabActiva={tabActiva}
+          marcas={marcasDisponibles}
+          duenos={duenosDisponibles}
+          categorias={categoriasDisponibles}
+          onChange={handleFiltroChange}
+          onLimpiar={limpiarFiltros}
+        />
+      </header>
+
+      <main className={styles.main}>
+        <div className={styles.headerRow}>
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>Panel de Administración Global</h1>
+            <span className={styles.roleBadge}>ROL: ADMIN</span>
+          </div>
           <p className={styles.subtitle}>
             Supervisión del sistema, verificación de talleres y gestión de usuarios
           </p>
         </div>
-        <span className={styles.roleBadge}>ROL: ADMIN</span>
-      </div>
 
-      {error && (
-        <Info severity="error">
-          <span>{error}</span>
-        </Info>
-      )}
+        {error && (
+          <Info severity="error">
+            <span>{error}</span>
+          </Info>
+        )}
 
-      {cargando ? (
-        <p className={styles.loadingText}>Cargando panel...</p>
-      ) : (
-        <>
-          <section className={styles.kpiGrid}>
-            <div className={styles.kpiCard}>
-              <div className={`${styles.kpiIconBox} ${styles.kpiIconWarning}`}>🏪</div>
-              <div className={styles.kpiNumber}>
-                {resumen?.talleres_pendientes ?? 0}
+        {cargando ? (
+          <p className={styles.loadingText}>Cargando panel...</p>
+        ) : (
+          <>
+            <section className={styles.kpiGrid}>
+              <div className={styles.kpiCard}>
+                <div>
+                  <div className={styles.kpiLabel}>Talleres Pendientes</div>
+                  <div className={styles.kpiNumber}>
+                    {new Intl.NumberFormat("en-US").format(talleresPendientes)}
+                  </div>
+                </div>
+                <div className={`${styles.kpiIconBox} ${styles.kpiIconWarning}`}>🏪</div>
               </div>
-              <div className={styles.kpiLabel}>Talleres Pendientes</div>
-            </div>
 
-            <div className={styles.kpiCard}>
-              <div className={`${styles.kpiIconBox} ${styles.kpiIconInfo}`}>👤</div>
-              <div className={styles.kpiNumber}>{resumen?.total_usuarios ?? 0}</div>
-              <div className={styles.kpiLabel}>Usuarios Totales</div>
-            </div>
-
-            <div className={styles.kpiCard}>
-              <div className={`${styles.kpiIconBox} ${styles.kpiIconSuccess}`}>🚙</div>
-              <div className={styles.kpiNumber}>{resumen?.total_vehiculos ?? 0}</div>
-              <div className={styles.kpiLabel}>Vehículos Registrados</div>
-            </div>
-          </section>
-
-          <CollapsibleSection
-            titulo="Gestión de Talleres (todos los estados)"
-            abierta={seccionesAbiertas.talleres}
-            onToggle={() => toggleSeccion("talleres")}
-          >
-            <Input
-              placeholder="Buscar por nombre de taller..."
-              value={busquedaTaller}
-              onChange={setBusquedaTaller}
-              className={styles.searchInput}
-            />
-
-            {talleresFiltrados.length === 0 ? (
-              <div className={styles.emptyState}>
-                <span className={styles.emptyIcon}>🏪</span>
-                <p className={styles.emptyText}>
-                  {talleres.length === 0
-                    ? "Aún no hay talleres registrados."
-                    : `Ningún taller coincide con "${busquedaTaller}".`}
-                </p>
+              <div className={styles.kpiCard}>
+                <div>
+                  <div className={styles.kpiLabel}>Usuarios Totales</div>
+                  <div className={styles.kpiNumber}>
+                    {new Intl.NumberFormat("en-US").format(resumen?.total_usuarios ?? 0)}
+                  </div>
+                </div>
+                <div className={`${styles.kpiIconBox} ${styles.kpiIconInfo}`}>👤</div>
               </div>
-            ) : (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Nombre Taller</th>
-                      <th>Categoría</th>
-                      <th>Propietario ID</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {talleresFiltrados.map((taller) => (
-                      <tr key={taller.id}>
-                        <td className={styles.cellStrong}>{taller.nombre}</td>
-                        <td>{taller.categoria}</td>
-                        <td className={styles.cellMuted}>{truncarId(taller.propietario_id)}</td>
-                        <td>
-                          <Pill color={taller.verificado ? "success" : "warning"}>
-                            {taller.verificado ? "Aprobado" : "Pendiente"}
-                          </Pill>
-                        </td>
-                        <td>
-                          {taller.verificado ? (
-                            <Button
-                              color="orange"
-                              disabled={actualizandoTallerId === taller.id}
-                              onClick={() => handleRevocarTaller(taller)}
-                            >
-                              Revocar aprobación
-                            </Button>
-                          ) : (
-                            <div className={styles.tableActions}>
-                              <Button
-                                color="green"
-                                disabled={actualizandoTallerId === taller.id}
-                                onClick={() => handleVerificarTaller(taller.id, true)}
+
+              <div className={styles.kpiCard}>
+                <div>
+                  <div className={styles.kpiLabel}>Vehículos Registrados</div>
+                  <div className={styles.kpiNumber}>
+                    {new Intl.NumberFormat("en-US").format(resumen?.total_vehiculos ?? 0)}
+                  </div>
+                </div>
+                <div className={`${styles.kpiIconBox} ${styles.kpiIconSuccess}`}>🚙</div>
+              </div>
+            </section>
+
+            <div className={styles.tabs} role="tablist">
+              {TABS_ADMIN.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tabActiva === tab.id}
+                  className={`${styles.tab} ${tabActiva === tab.id ? styles.tabActive : ""}`}
+                  onClick={() => setTabActiva(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {tabActiva === "talleres" && (
+              <section className={styles.card}>
+                {talleresFiltrados.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyIcon}>🏪</span>
+                    <p className={styles.emptyText}>
+                      {talleres.length === 0
+                        ? "Aún no hay talleres registrados."
+                        : "Ningún taller coincide con la búsqueda o los filtros."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Nombre Taller</th>
+                          <th>Categoría</th>
+                          <th>ID</th>
+                          <th>Estado</th>
+                          <th className={styles.thRight}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {talleresFiltrados.map((taller) => (
+                          <tr key={taller.id}>
+                            <td className={styles.cellStrong}>{taller.nombre}</td>
+                            <td className={styles.cellText}>{taller.categoria}</td>
+                            <td className={styles.cellId}>{formatIdTaller(taller.id)}</td>
+                            <td>
+                              <span
+                                className={`${styles.statusPill} ${
+                                  taller.verificado ? styles.statusOk : styles.statusWarn
+                                }`}
                               >
-                                Aprobar
-                              </Button>
-                              <Button
-                                color="red"
-                                disabled={actualizandoTallerId === taller.id}
-                                onClick={() => handleVerificarTaller(taller.id, false)}
+                                {taller.verificado ? "Verificado" : "Pendiente"}
+                              </span>
+                            </td>
+                            <td>
+                              <div className={styles.tableActions}>
+                                {taller.verificado ? (
+                                  <>
+                                    <button type="button" className={styles.btnGhost} disabled>
+                                      Aprobado
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.btnOutline}
+                                      disabled={actualizandoTallerId === taller.id}
+                                      onClick={() => handleRevocarTaller(taller)}
+                                    >
+                                      Revocar
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className={styles.btnGreen}
+                                      disabled={actualizandoTallerId === taller.id}
+                                      onClick={() => handleVerificarTaller(taller.id, true)}
+                                    >
+                                      Aprobar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.btnRed}
+                                      disabled={actualizandoTallerId === taller.id}
+                                      onClick={() => handleVerificarTaller(taller.id, false)}
+                                    >
+                                      Rechazar
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {tabActiva === "usuarios" && (
+              <section className={styles.card}>
+                {usuariosFiltrados.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyIcon}>🔍</span>
+                    <p className={styles.emptyText}>
+                      {usuarios.length === 0
+                        ? "Aún no hay usuarios registrados."
+                        : "Ningún usuario coincide con la búsqueda o los filtros."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Usuario</th>
+                          <th>Correo</th>
+                          <th>Rol Actual</th>
+                          <th>Estado</th>
+                          <th className={styles.thRight}>Cuenta</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {usuariosFiltrados.map((usuario) => (
+                          <tr key={usuario.id}>
+                            <td className={styles.cellStrong}>{usuario.nombre_completo}</td>
+                            <td className={styles.cellText}>{usuario.correo}</td>
+                            <td>
+                              {/* El pill es un <select>: sigue permitiendo cambiar el rol. */}
+                              <select
+                                className={`${rolePillClass(
+                                  rolSeleccionado[usuario.id] ?? usuario.rol
+                                )} ${styles.rolSelect}`}
+                                value={rolSeleccionado[usuario.id] ?? usuario.rol}
+                                disabled={cambiandoRolId === usuario.id}
+                                onChange={(e) => handleSelectChange(usuario, e.target.value)}
+                                aria-label={`Cambiar rol de ${usuario.nombre_completo}`}
                               >
-                                Rechazar
-                              </Button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                                {ROLE_OPTIONS.map((opcion) => (
+                                  <option key={opcion.value} value={opcion.value}>
+                                    {ROL_LABELS[opcion.value] ?? opcion.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td>
+                              <span
+                                className={`${styles.statusPill} ${
+                                  usuario.activo ? styles.statusOk : styles.statusOff
+                                }`}
+                              >
+                                {usuario.activo ? "Activo" : "Inactivo"}
+                              </span>
+                            </td>
+                            <td>
+                              <div className={styles.tableActions}>
+                                <button
+                                  type="button"
+                                  className={usuario.activo ? styles.btnRed : styles.btnGreen}
+                                  disabled={cambiandoEstadoId === usuario.id}
+                                  onClick={() => handleToggleEstado(usuario)}
+                                >
+                                  {usuario.activo ? "Desactivar" : "Activar"}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             )}
-          </CollapsibleSection>
 
-          <CollapsibleSection
-            titulo="Gestión de Usuarios y Asignación de Roles"
-            abierta={seccionesAbiertas.usuarios}
-            onToggle={() => toggleSeccion("usuarios")}
-          >
-            <Input
-              placeholder="Buscar por nombre de usuario..."
-              value={busquedaUsuario}
-              onChange={setBusquedaUsuario}
-              className={styles.searchInput}
-            />
+            {tabActiva === "catalogo" && (
+              <>
+                <section className={`${styles.card} ${styles.priceForm}`}>
+                  <h2 className={styles.formTitle}>
+                    <span aria-hidden="true">🏷️</span> Asignar Nuevo Precio de Catálogo
+                  </h2>
 
-            {usuariosFiltrados.length === 0 ? (
-              <div className={styles.emptyState}>
-                <span className={styles.emptyIcon}>🔍</span>
-                <p className={styles.emptyText}>
-                  Ningún usuario coincide con &quot;{busquedaUsuario}&quot;.
-                </p>
-              </div>
-            ) : (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Usuario</th>
-                      <th>Correo</th>
-                      <th>Rol Actual</th>
-                      <th>Cambiar Rol</th>
-                      <th>Estado</th>
-                      <th>Cuenta</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {usuariosFiltrados.map((usuario) => (
-                      <tr key={usuario.id}>
-                        <td className={styles.cellStrong}>{usuario.nombre_completo}</td>
-                        <td className={styles.cellMuted}>{usuario.correo}</td>
-                        <td>
-                          <span className={rolePillClass(usuario.rol)}>{usuario.rol}</span>
-                        </td>
-                        <td>
-                          <Select
-                            options={ROLE_OPTIONS}
-                            value={rolSeleccionado[usuario.id] ?? usuario.rol}
-                            disabled={cambiandoRolId === usuario.id}
-                            onChange={(valor) => handleSelectChange(usuario, valor)}
-                          />
-                        </td>
-                        <td>
-                          <Pill color={usuario.activo ? "success" : "error"}>
-                            {usuario.activo ? "Activo" : "Inactivo"}
-                          </Pill>
-                        </td>
-                        <td>
-                          <Button
-                            color={usuario.activo ? "red" : "green"}
-                            disabled={cambiandoEstadoId === usuario.id}
-                            onClick={() => handleToggleEstado(usuario)}
-                          >
-                            {usuario.activo ? "Desactivar" : "Activar"}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  <div className={styles.priceFormMain}>
+                    <select
+                      className={styles.formControl}
+                      value={formPrecio.piezaId}
+                      onChange={(e) => handleFormPrecioChange("piezaId", e.target.value)}
+                      aria-label="Pieza"
+                    >
+                      {piezaOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      className={styles.formControl}
+                      placeholder="Marca (ej: Toyota)"
+                      value={formPrecio.marca}
+                      onChange={(e) => handleFormPrecioChange("marca", e.target.value)}
+                      aria-label="Marca"
+                    />
+                    <input
+                      className={styles.formControl}
+                      type="number"
+                      placeholder="Precio Repuesto ($)"
+                      value={formPrecio.precioRepuesto}
+                      onChange={(e) => handleFormPrecioChange("precioRepuesto", e.target.value)}
+                      aria-label="Precio repuesto"
+                    />
+                    <button
+                      type="button"
+                      className={styles.btnPrimaryWide}
+                      disabled={guardandoPrecio}
+                      onClick={handleCrearPrecio}
+                    >
+                      {guardandoPrecio ? "Guardando..." : "Agregar Precio"}
+                    </button>
+                  </div>
+
+                  <div className={styles.priceFormExtra}>
+                    <input
+                      className={styles.formControl}
+                      placeholder="Modelo (ej: Corolla)"
+                      value={formPrecio.modelo}
+                      onChange={(e) => handleFormPrecioChange("modelo", e.target.value)}
+                      aria-label="Modelo"
+                    />
+                    <input
+                      className={styles.formControl}
+                      type="number"
+                      placeholder="Año desde"
+                      value={formPrecio.anoDesde}
+                      onChange={(e) => handleFormPrecioChange("anoDesde", e.target.value)}
+                      aria-label="Año desde"
+                    />
+                    <input
+                      className={styles.formControl}
+                      type="number"
+                      placeholder="Año hasta"
+                      value={formPrecio.anoHasta}
+                      onChange={(e) => handleFormPrecioChange("anoHasta", e.target.value)}
+                      aria-label="Año hasta"
+                    />
+                    <select
+                      className={styles.formControl}
+                      value={formPrecio.moneda}
+                      onChange={(e) => handleFormPrecioChange("moneda", e.target.value)}
+                      aria-label="Moneda"
+                    >
+                      {MONEDA_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      className={styles.formControl}
+                      type="number"
+                      placeholder="Mano de obra ($)"
+                      value={formPrecio.precioManoObra}
+                      onChange={(e) => handleFormPrecioChange("precioManoObra", e.target.value)}
+                      aria-label="Precio mano de obra"
+                    />
+                    <input
+                      className={styles.formControl}
+                      type="number"
+                      placeholder="Pintura ($)"
+                      value={formPrecio.precioPintura}
+                      onChange={(e) => handleFormPrecioChange("precioPintura", e.target.value)}
+                      aria-label="Precio pintura"
+                    />
+                  </div>
+                </section>
+
+                <section className={styles.card}>
+                  {catalogoFiltrado.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <span className={styles.emptyIcon}>💲</span>
+                      <p className={styles.emptyText}>
+                        {catalogoPrecios.length === 0
+                          ? "Todavía no hay precios asignados en el catálogo."
+                          : "Ningún registro coincide con la búsqueda o los filtros."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.tableWrapper}>
+                      <table className={styles.table}>
+                        <thead>
+                          <tr>
+                            <th>Pieza</th>
+                            <th>Marca / Modelo</th>
+                            <th>Años</th>
+                            <th>Precio Repuesto</th>
+                            <th>Mano de obra</th>
+                            <th>Pintura</th>
+                            <th className={styles.thRight}>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {catalogoFiltrado.map((precio) => (
+                            <tr key={precio.id}>
+                              <td className={styles.cellStrong}>{precio.pieza_nombre}</td>
+                              <td className={styles.cellText}>
+                                {precio.marca} {precio.modelo}
+                              </td>
+                              <td className={styles.cellText}>
+                                {precio.ano_desde}–{precio.ano_hasta}
+                              </td>
+                              <td className={styles.cellPrice}>
+                                {formatMoneda(precio.precio_repuesto, precio.moneda)}
+                              </td>
+                              <td className={styles.cellText}>
+                                {formatMoneda(precio.precio_mano_obra, precio.moneda)}
+                              </td>
+                              <td className={styles.cellText}>
+                                {formatMoneda(precio.precio_pintura, precio.moneda)}
+                              </td>
+                              <td>
+                                <div className={styles.tableActions}>
+                                  <button
+                                    type="button"
+                                    className={styles.btnRed}
+                                    disabled={eliminandoPrecioId === precio.id}
+                                    onClick={() => handleEliminarPrecio(precio)}
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              </>
             )}
-          </CollapsibleSection>
+          </>
+        )}
+      </main>
 
-          <CollapsibleSection
-            titulo="Gestión del Catálogo de Precios"
-            abierta={seccionesAbiertas.catalogo}
-            onToggle={() => toggleSeccion("catalogo")}
-          >
-            <p className={styles.sectionHint}>
-              Asigna un precio de repuesto, mano de obra y pintura a una pieza para un rango de marca, modelo y año.
-            </p>
-
-            <div className={styles.priceForm}>
-              <div className={styles.priceFormGrid}>
-                <div className={styles.priceFormField}>
-                  <label>Pieza</label>
-                  <Select
-                    options={piezaOptions}
-                    value={formPrecio.piezaId}
-                    onChange={(v) => handleFormPrecioChange("piezaId", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Marca</label>
-                  <Input
-                    placeholder="Ej. Toyota"
-                    value={formPrecio.marca}
-                    onChange={(v) => handleFormPrecioChange("marca", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Modelo</label>
-                  <Input
-                    placeholder="Ej. Corolla"
-                    value={formPrecio.modelo}
-                    onChange={(v) => handleFormPrecioChange("modelo", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Año desde</label>
-                  <Input
-                    type="number"
-                    placeholder="2015"
-                    value={formPrecio.anoDesde}
-                    onChange={(v) => handleFormPrecioChange("anoDesde", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Año hasta</label>
-                  <Input
-                    type="number"
-                    placeholder="2023"
-                    value={formPrecio.anoHasta}
-                    onChange={(v) => handleFormPrecioChange("anoHasta", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Moneda</label>
-                  <Select
-                    options={MONEDA_OPTIONS}
-                    value={formPrecio.moneda}
-                    onChange={(v) => handleFormPrecioChange("moneda", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Precio repuesto</label>
-                  <Input
-                    type="number"
-                    placeholder="350000"
-                    value={formPrecio.precioRepuesto}
-                    onChange={(v) => handleFormPrecioChange("precioRepuesto", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Precio mano de obra</label>
-                  <Input
-                    type="number"
-                    placeholder="80000"
-                    value={formPrecio.precioManoObra}
-                    onChange={(v) => handleFormPrecioChange("precioManoObra", v)}
-                  />
-                </div>
-                <div className={styles.priceFormField}>
-                  <label>Precio pintura</label>
-                  <Input
-                    type="number"
-                    placeholder="120000"
-                    value={formPrecio.precioPintura}
-                    onChange={(v) => handleFormPrecioChange("precioPintura", v)}
-                  />
-                </div>
-              </div>
-
-              <Button color="green" disabled={guardandoPrecio} onClick={handleCrearPrecio}>
-                {guardandoPrecio ? "Guardando..." : "Agregar precio"}
-              </Button>
-            </div>
-
-            <Input
-              placeholder="Buscar por pieza, marca, modelo, moneda o año..."
-              value={busquedaCatalogo}
-              onChange={setBusquedaCatalogo}
-              className={styles.searchInput}
-            />
-
-            {catalogoFiltrado.length === 0 ? (
-              <div className={styles.emptyState}>
-                <span className={styles.emptyIcon}>💲</span>
-                <p className={styles.emptyText}>
-                  {catalogoPrecios.length === 0
-                    ? "Todavía no hay precios asignados en el catálogo."
-                    : `Ningún registro coincide con "${busquedaCatalogo}".`}
-                </p>
-              </div>
-            ) : (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Pieza</th>
-                      <th>Marca / Modelo</th>
-                      <th>Años</th>
-                      <th>Repuesto</th>
-                      <th>Mano de obra</th>
-                      <th>Pintura</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {catalogoFiltrado.map((precio) => (
-                      <tr key={precio.id}>
-                        <td className={styles.cellStrong}>{precio.pieza_nombre}</td>
-                        <td>
-                          {precio.marca} {precio.modelo}
-                        </td>
-                        <td className={styles.cellMuted}>
-                          {precio.ano_desde}–{precio.ano_hasta}
-                        </td>
-                        <td>{formatMoneda(precio.precio_repuesto, precio.moneda)}</td>
-                        <td>{formatMoneda(precio.precio_mano_obra, precio.moneda)}</td>
-                        <td>{formatMoneda(precio.precio_pintura, precio.moneda)}</td>
-                        <td>
-                          <Button
-                            color="red"
-                            disabled={eliminandoPrecioId === precio.id}
-                            onClick={() => handleEliminarPrecio(precio)}
-                          >
-                            Eliminar
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CollapsibleSection>
-        </>
+      {notifAbiertas && (
+        <NotificationsModal pendientes={talleresPendientes} onClose={cerrarNotificaciones} />
       )}
-    </main>
+    </div>
   );
 };
 

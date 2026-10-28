@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { limpiarSesion } from "@/app/lib/auth/session";
+import { limpiarSesion, useUsuarioSesion } from "@/app/lib/auth/session";
 import styles from "./Sidebar.module.css";
 
 const menuItems = [
@@ -19,6 +19,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const usuario = useUsuarioSesion();
 
   const closeMenu = () => setIsOpen(false);
   const handleLogout = () => {
@@ -51,7 +52,7 @@ export default function Sidebar() {
             onClick={closeMenu}
             className={`${styles.navLink} ${pathname === item.href ? styles.navLinkActive : ""}`}
           >
-            {item.label}
+            {item.href === "/" && usuario?.rol === "admin" ? "Inicio / Panel Global" : item.label}
           </Link>
         ))}
         <div className={styles.footer}>
