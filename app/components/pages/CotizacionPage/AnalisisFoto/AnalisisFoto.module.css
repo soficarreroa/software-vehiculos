@@ -9,52 +9,275 @@
   display: flex;
 }
 
-.ayuda {
+/* ---------- Foto con cajas numeradas ---------- */
+.figura {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-light);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.resultado {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+.marco {
+  position: relative;
+  width: 100%;
   border-radius: 12px;
-  box-shadow: 0 1px 3px var(--card-shadow);
+  overflow: hidden;
+  background: #1e293b;
+}
+
+.foto {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.caja {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid;
+  border-radius: 2px;
+}
+
+.cajaLeve {
+  border-color: #16a34a;
+  --color-caja: #16a34a;
+}
+
+.cajaModerado {
+  border-color: #f59e0b;
+  --color-caja: #f59e0b;
+}
+
+.cajaGrave {
+  border-color: #dc2626;
+  --color-caja: #dc2626;
+}
+
+.numeroCaja {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  transform: translateY(-100%);
+  min-width: 24px;
+  padding: 2px 8px;
+  background: var(--color-caja);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: center;
+  border-radius: 4px 4px 0 0;
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-light, #64748b);
+}
+
+/* ---------- Tarjetas (costo y daños) ---------- */
+.costo,
+.panel {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px var(--card-shadow, rgba(0, 0, 0, 0.08));
   padding: 16px;
+  min-width: 0;
 }
 
-.resultadoTitulo {
+.panelTitulo {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.panelAyuda {
   margin: 0 0 12px;
-  font-size: 1.05rem;
-  color: var(--text-primary);
+  font-size: 0.85rem;
+  color: var(--text-light, #64748b);
 }
 
+/* ---------- Costo estimado ---------- */
+.pestanas {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 8px 0;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 10px;
+}
+
+.pestana {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-main, #334155);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.pestanaActiva {
+  background: var(--card-bg, #fff);
+  color: var(--primary-color, #2563eb);
+  box-shadow: 0 1px 3px var(--card-shadow, rgba(0, 0, 0, 0.12));
+}
+
+.guia {
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: var(--text-main, #334155);
+  font-size: 0.95rem;
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.totalValor {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.totalMoneda {
+  font-size: 0.85rem;
+  color: var(--text-light, #64748b);
+}
+
+.totalVacio {
+  color: var(--text-light, #64748b);
+}
+
+.desglose {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.desgloseFila {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary, #f8fafc);
+  font-size: 0.9rem;
+  color: var(--text-main, #334155);
+}
+
+.nota {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-light, #64748b);
+}
+
+/* ---------- Daños detectados ---------- */
 .listaDanos {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .dano {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 10px;
+}
+
+.danoCabecera {
+  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--bg-secondary);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.danoNumero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1e293b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
 }
 
 .danoNombre {
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--text-main, #0f172a);
 }
 
-.danoConfianza,
 .sinSeveridad {
   font-size: 0.85rem;
-  color: var(--text-light);
+  color: var(--text-light, #64748b);
+}
+
+.confianza {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-light, #64748b);
+}
+
+.barra {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-secondary, #e2e8f0);
+  overflow: hidden;
+}
+
+.barraRelleno {
+  height: 100%;
+  background: #3b82f6;
+}
+
+.etiquetaSelect {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main, #334155);
+}
+
+.selectPieza {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  color: var(--text-main, #0f172a);
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.piezaPropia {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-main, #334155);
+}
+
+.piezaPropia span {
+  color: var(--text-light, #64748b);
+  font-size: 0.8rem;
 }

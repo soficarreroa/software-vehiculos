@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import styles from './CotizacionPage.module.css';
-import Button from '@/app/components/ui/Button/Button';
-
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { authenticatedFetch, readApiError } from '@/app/lib/api/client';
-import { getAuthenticatedVehicles, type Vehicle } from '@/app/lib/api/vehicles';
-import AnalisisFoto from './AnalisisFoto/AnalisisFoto';
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import styles from "./CotizacionPage.module.css";
+import Button from "@/app/components/ui/Button/Button";
+import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
+import { getAuthenticatedVehicles, type Vehicle } from "@/app/lib/api/vehicles";
+import AnalisisFoto from "./AnalisisFoto/AnalisisFoto";
+import CostoEstimado from "./AnalisisFoto/CostoEstimado";
+import DanosDetectados from "./AnalisisFoto/DanosDetectados";
+import { ETIQUETA_COTIZACION, type Establecimiento } from "./AnalisisFoto/AnalisisFoto.constants";
+import type { ResultadoAnalisis } from "./AnalisisFoto/AnalisisFoto.service";
+import { useEstimacion } from "./AnalisisFoto/useEstimacion";
+import { generarPDF } from "./Cotizacion.pdf";
+import { construirObservaciones, montoMedio, nombreEstablecimiento } from "./Cotizacion.utils";
 
 // Configuración de etiquetas: label (visual), emoji (interfaz), valor (base de datos)
 const ETIQUETAS_DANOS = [
@@ -16,16 +21,16 @@ const ETIQUETAS_DANOS = [
   { label: "Abolladura", emoji: "🔨", valor: "Abolladura" },
   { label: "Rotura", emoji: "💥", valor: "Rotura" },
   { label: "Pintura", emoji: "🎨", valor: "Pintura" },
-  { label: "Falta pieza", emoji: "🔍", valor: "Falta pieza" }
+  { label: "Falta pieza", emoji: "🔍", valor: "Falta pieza" },
 ];
 
 interface Pieza {
   id: number;
   nombre: string;
-  precio_repuesto: number;
-  precio_mano_obra: number;
-  precio_pintura: number;
-  moneda: string;
+  precio_repuesto: number | null;
+  precio_mano_obra: number | null;
+  precio_pintura: number | null;
+  moneda: string | null;
 }
 
 interface ItemSeleccionado {
@@ -35,20 +40,35 @@ interface ItemSeleccionado {
   descripcion: string;
 }
 
+interface PiezasEstado {
+  vehiculoId: number;
+  piezas: Pieza[];
+  error: string | null;
+}
+
 export default function CotizacionPage() {
+  const router = useRouter();
+
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [piezasCargadas, setPiezasCargadas] = useState<Pieza[]>([]);
-  
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | 'Selected'>('Selected');
-  // Sin vehículo seleccionado no hay piezas disponibles (valor derivado, sin setState en el efecto)
-  const piezasDisponibles = typeof selectedVehicleId === 'number' ? piezasCargadas : [];
-  const [observaciones, setObservaciones] = useState('');
-  const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split('T')[0]);
-  
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | "Selected">("Selected");
+  const [observaciones, setObservaciones] = useState("");
+  const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split("T")[0]);
+
   const [items, setItems] = useState<ItemSeleccionado[]>([]);
-  // Etiquetas de daño sugeridas por el análisis de la foto (solo se marcan, no se activan solas)
-  const [etiquetasSugeridas, setEtiquetasSugeridas] = useState<string[]>([]);
+  const [piezasEstado, setPiezasEstado] = useState<PiezasEstado | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Resultado de la foto y pieza asignada a cada daño (por índice)
+  const [resultado, setResultado] = useState<ResultadoAnalisis | null>(null);
+  const [asignaciones, setAsignaciones] = useState<Record<number, string>>({});
+  const [establecimiento, setEstablecimiento] = useState<Establecimiento>("multimarca");
+
+  const vehiculoId = typeof selectedVehicleId === "number" ? selectedVehicleId : null;
+  const danos = useMemo(() => resultado?.danos_detectados ?? [], [resultado]);
+  const estimacion = useEstimacion(vehiculoId, danos, asignaciones);
+
+  // Los datos del siniestro habilitan el detalle de piezas
+  const datosListos = vehiculoId !== null && Boolean(fechaIncidente);
 
   // 1. Cargar vehículos
   useEffect(() => {
@@ -57,7 +77,7 @@ export default function CotizacionPage() {
       .then((data: Vehicle[]) => {
         if (activo) setVehicles(Array.isArray(data) ? data : []);
       })
-      .catch(err => {
+      .catch((err) => {
         if (activo) console.error("Error cargando vehículos:", err);
       });
     return () => {
@@ -65,338 +85,339 @@ export default function CotizacionPage() {
     };
   }, []);
 
-  // 2. Cargar piezas por vehículo
+  // 2. Cargar piezas del vehículo elegido
   useEffect(() => {
-    if (typeof selectedVehicleId === 'number') {
-      let activo = true;
-      authenticatedFetch(`/api/v1/vehiculos/${selectedVehicleId}/piezas-disponibles`)
-        .then(async (res) => {
-          if (!res.ok) throw await readApiError(res, 'No se pudieron cargar las piezas disponibles.');
-          return res.json();
-        })
-        .then((data: Pieza[]) => {
-          if (activo) setPiezasCargadas(Array.isArray(data) ? data : []);
-        })
-        .catch(err => {
-          if (activo) {
-            setPiezasCargadas([]);
-            console.error("Error cargando piezas:", err);
-          }
-        });
-      return () => {
-        activo = false;
-      };
-    }
-  }, [selectedVehicleId]);
+    if (vehiculoId === null) return;
+    let activo = true;
+    authenticatedFetch(`/api/v1/vehiculos/${vehiculoId}/piezas-disponibles`)
+      .then(async (res) => {
+        if (!res.ok) throw await readApiError(res, "No se pudieron cargar las piezas disponibles.");
+        return res.json();
+      })
+      .then((data: Pieza[]) => {
+        if (activo) {
+          setPiezasEstado({ vehiculoId, piezas: Array.isArray(data) ? data : [], error: null });
+        }
+      })
+      .catch((err: unknown) => {
+        console.error("Error cargando piezas:", err);
+        if (activo) {
+          setPiezasEstado({
+            vehiculoId,
+            piezas: [],
+            error: err instanceof Error ? err.message : "No se pudieron cargar las piezas disponibles.",
+          });
+        }
+      });
+    return () => {
+      activo = false;
+    };
+  }, [vehiculoId]);
+
+  const piezasVigentes = vehiculoId !== null && piezasEstado?.vehiculoId === vehiculoId ? piezasEstado : null;
+  const piezasDisponibles = piezasVigentes?.piezas ?? [];
+  const cargandoPiezas = vehiculoId !== null && !piezasVigentes;
+
+  // Etiquetas de daño sugeridas por la foto (solo se marcan, no se activan solas)
+  const etiquetasSugeridas = useMemo(() => {
+    const etiquetas = danos
+      .map((dano) => ETIQUETA_COTIZACION[dano.tipo_dano])
+      .filter((etiqueta): etiqueta is string => Boolean(etiqueta));
+    return [...new Set(etiquetas)];
+  }, [danos]);
+
+  const alAnalizar = (nuevo: ResultadoAnalisis | null) => {
+    setResultado(nuevo);
+    setAsignaciones({});
+  };
+
+  const asignarPieza = (indice: number, pieza: string) => {
+    setAsignaciones((actual) => ({ ...actual, [indice]: pieza }));
+  };
 
   const agregarPieza = (piezaId: string) => {
     if (!piezaId) return;
-    const pieza = piezasDisponibles.find(p => p.id === parseInt(piezaId));
+    const pieza = piezasDisponibles.find((p) => p.id === parseInt(piezaId));
     if (pieza) {
-      setItems([...items, {
-        pieza_id: pieza.id,
-        nombre: pieza.nombre,
-        cantidad: 1,
-        descripcion: "" // Inicia vacío para la base de datos
-      }]);
+      setItems((actual) => [
+        ...actual,
+        { pieza_id: pieza.id, nombre: pieza.nombre, cantidad: 1, descripcion: "" },
+      ]);
     }
-  };
-
-  const agregarANotas = (texto: string) => {
-    setObservaciones(prev => (prev.trim() ? `${prev.trim()}\n${texto}` : texto));
   };
 
   const eliminarItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
+    setItems((actual) => actual.filter((_, i) => i !== index));
   };
 
-  // Función para manejar etiquetas SIN emojis para la DB
+  const cambiarDescripcion = (index: number, descripcion: string) => {
+    setItems((actual) => actual.map((item, i) => (i === index ? { ...item, descripcion } : item)));
+  };
+
   const toggleEtiqueta = (index: number, valorEtiqueta: string) => {
-    const newItems = [...items];
-    const desc = newItems[index].descripcion;
-
-    // Convertimos la descripción en un array para manipularla mejor
-    let etiquetasActivas = desc ? desc.split(', ').filter(tag => tag.trim() !== "") : [];
-
-    if (etiquetasActivas.includes(valorEtiqueta)) {
-      // Si ya está, la removemos
-      etiquetasActivas = etiquetasActivas.filter(tag => tag !== valorEtiqueta);
-    } else {
-      // Si no está, la agregamos
-      etiquetasActivas.push(valorEtiqueta);
-    }
-
-    // Unimos de nuevo con coma y espacio
-    newItems[index].descripcion = etiquetasActivas.join(', ');
-    setItems(newItems);
+    setItems((actual) =>
+      actual.map((item, i) => {
+        if (i !== index) return item;
+        const activas = item.descripcion ? item.descripcion.split(", ").filter((t) => t.trim() !== "") : [];
+        const nuevas = activas.includes(valorEtiqueta)
+          ? activas.filter((t) => t !== valorEtiqueta)
+          : [...activas, valorEtiqueta];
+        return { ...item, descripcion: nuevas.join(", ") };
+      }),
+    );
   };
 
-
-const generarPDF = (vehiculo: Vehicle) => {
-  const doc = new jsPDF();
-  let granTotal = 0;
-
-  // Encabezado
-  doc.setFontSize(18);
-  doc.setTextColor(33, 47, 61);
-  doc.text("PRESUPUESTO DE REPARACIÓN", 105, 20, { align: "center" });
-  
-  doc.setDrawColor(200, 200, 200);
-  doc.line(20, 25, 190, 25);
-
-  // Datos del Vehículo
-  doc.setFontSize(10);
-  doc.text(`Vehículo: ${vehiculo.marca} ${vehiculo.modelo}`, 20, 35);
-  doc.text(`Placa: ${vehiculo.placa.toUpperCase()}`, 20, 41);
-  doc.text(`Fecha: ${fechaIncidente}`, 150, 35);
-
-  // Mapear filas y calcular totales
-  const tableRows = items.map(item => {
-    // Buscamos la info de precios original de la pieza desde piezasDisponibles
-    const infoPrecio = piezasDisponibles.find(p => p.id === item.pieza_id);
-    
-    const repuesto = infoPrecio?.precio_repuesto || 0;
-    const obra = infoPrecio?.precio_mano_obra || 0;
-    const pintura = infoPrecio?.precio_pintura || 0;
-    const subtotal = (repuesto + obra + pintura) * item.cantidad;
-    
-    granTotal += subtotal;
-
-    return [
-      item.nombre,
-      item.descripcion || "Normal",
-      `$${repuesto.toLocaleString()}`,
-      `$${obra.toLocaleString()}`,
-      `$${pintura.toLocaleString()}`,
-      `$${subtotal.toLocaleString()}`
-    ];
-  });
-
-  // Generar Tabla
-  autoTable(doc, {
-    startY: 50,
-    head: [['Pieza', 'Detalle', 'Repuesto', 'M. Obra', 'Pintura', 'Subtotal']],
-    body: tableRows,
-    headStyles: { fillColor: [40, 167, 69] },
-    styles: { fontSize: 8 },
-    columnStyles: {
-      5: { halign: 'right', fontStyle: 'bold' } // Subtotal alineado a la derecha
-    }
-  });
-
-  // Resumen de Totales
-  const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
-  
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text(`TOTAL ESTIMADO (COP) : `, 110 , finalY + 7);
-  doc.text(`$${granTotal.toLocaleString()}`, 190, finalY + 7, { align: "right" });
-
-  // Cuadro de firmas o notas legales
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100);
-  const notaLegal = "Este presupuesto es una estimación basada en los precios vigentes de catálogo. Los valores finales pueden variar tras el desarmado del vehículo.";
-  doc.text(notaLegal, 20, finalY + 20, { maxWidth: 170 });
-
-  doc.save(`Presupuesto_${vehiculo.placa}.pdf`);
-};
-
-
-const enviarCotizacion = async () => {
-  if (typeof selectedVehicleId !== 'number' || items.length === 0) return;
-
-  setLoading(true);
-  const payload = {
-    vehiculo_id: selectedVehicleId,
-    fecha_incidente: fechaIncidente,
-    observaciones: observaciones,
-    items: items.map(i => ({
-      pieza_id: i.pieza_id,
-      cantidad: i.cantidad,
-      descripcion: i.descripcion || "Sin descripción específica"
-    }))
-  };
-
-  try {
-    const response = await authenticatedFetch('/api/v1/cotizaciones/completa', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      // 1. Buscamos los datos del vehículo para el PDF
-      const vehiculoActual = vehicles.find(v => v.id === selectedVehicleId);
-      
-      // 2. Generamos el PDF si encontramos el vehículo
-      if (vehiculoActual) {
-        generarPDF(vehiculoActual);
-      }
-
-      // 3. Notificamos al usuario
-      alert("✅ Cotización guardada y PDF generado correctamente");
-
-      // 4. Limpiamos el formulario
-      setItems([]);
-      setObservaciones("");
-      // Opcional: podrías resetear el vehículo seleccionado si lo deseas
-      // setSelectedVehicleId('Selected'); 
-      
-    } else {
-      const apiError = await readApiError(
-        response,
-        response.status === 404
-          ? "El vehículo no existe o no pertenece al usuario actual."
-          : response.status === 422
-            ? "Revisa los datos de la cotización."
-            : "Error al procesar la cotización en el servidor",
-      );
-      alert(`❌ ${apiError.message}`);
-    }
-  } catch (error) {
-    console.error("Error conexión API:", error);
-    alert("❌ Error crítico: No se pudo conectar con el servidor");
-  } finally {
-    setLoading(false);
+  // Mensaje guía del cuadro de costo cuando todavía no hay estimado
+  let guia: string | null = null;
+  if (danos.length === 0) {
+    guia = "Sube una foto y analiza los daños para ver el costo estimado.";
+  } else if (vehiculoId === null) {
+    guia = "Elige tu vehículo en «Datos del siniestro» para calcular el costo.";
+  } else if (!estimacion.listo) {
+    guia = "Asigna la pieza afectada a cada daño para calcular el costo.";
   }
-};
 
+  const monto = montoMedio(estimacion.estimacion, establecimiento);
+  const puedeFinalizar = datosListos && (items.length > 0 || monto !== null);
 
+  const enviarCotizacion = async () => {
+    const vehiculoActual = vehicles.find((v) => v.id === selectedVehicleId);
+    if (!vehiculoActual || !puedeFinalizar) return;
+
+    setLoading(true);
+    const payload = {
+      vehiculo_id: vehiculoActual.id,
+      fecha_incidente: fechaIncidente,
+      observaciones: construirObservaciones({
+        notas: observaciones,
+        danos,
+        asignaciones,
+        estimacion: estimacion.estimacion,
+        establecimiento,
+      }),
+      items: items.map((i) => ({
+        pieza_id: i.pieza_id,
+        cantidad: i.cantidad,
+        descripcion: i.descripcion || "Sin descripción específica",
+      })),
+      monto_estimado: monto ?? undefined,
+    };
+
+    try {
+      const response = await authenticatedFetch("/api/v1/cotizaciones/completa", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        generarPDF({
+          vehiculo: vehiculoActual,
+          fecha: fechaIncidente,
+          estimacion: estimacion.estimacion,
+          filas: items.map((item) => {
+            const info = piezasDisponibles.find((p) => p.id === item.pieza_id);
+            return {
+              nombre: item.nombre,
+              detalle: item.descripcion,
+              repuesto: info?.precio_repuesto ?? 0,
+              manoObra: info?.precio_mano_obra ?? 0,
+              pintura: info?.precio_pintura ?? 0,
+              cantidad: item.cantidad,
+            };
+          }),
+        });
+        alert("✅ Cotización guardada y PDF generado. La verás en tu historial.");
+        router.push("/historial");
+      } else {
+        const apiError = await readApiError(
+          response,
+          response.status === 404
+            ? "El vehículo no existe o no pertenece al usuario actual."
+            : response.status === 422
+              ? "Revisa los datos de la cotización."
+              : "Error al procesar la cotización en el servidor",
+        );
+        alert(`❌ ${apiError.message}`);
+      }
+    } catch (error) {
+      console.error("Error conexión API:", error);
+      alert("❌ Error crítico: No se pudo conectar con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>📝 Generador de Cotizaciones</h1>
-        <p>Selecciona un vehículo y las piezas afectadas para el reporte.</p>
+        <h1>Cotización con foto</h1>
+        <p>Sube una foto del daño y obtén un rango aproximado de reparación en pocos segundos.</p>
       </header>
 
-      <div className={styles.grid}>
-        {/* LADO IZQUIERDO: Info General */}
-        <div className={styles.stepCard}>
-          <h2 className={styles.stepTitle}>1. Datos del Siniestro</h2>
-          
+      <div className={styles.pantalla}>
+        <div className={styles.areaCosto}>
+          <CostoEstimado
+            establecimiento={establecimiento}
+            onCambiar={setEstablecimiento}
+            estimacion={estimacion.estimacion}
+            estimando={estimacion.estimando}
+            error={estimacion.error}
+            guia={guia}
+          />
+        </div>
+
+        <div className={styles.areaFoto}>
+          <AnalisisFoto onResultado={alAnalizar} />
+        </div>
+
+        <div className={styles.areaDanos}>
+          <DanosDetectados danos={danos} asignaciones={asignaciones} onAsignar={asignarPieza} />
+        </div>
+
+        {/* DATOS DEL SINIESTRO */}
+        <section className={`${styles.stepCard} ${styles.areaDatos}`}>
+          <h2 className={styles.stepTitle}>Datos del siniestro</h2>
+
           <div className={styles.formGroup}>
-            <label>Vehículo</label>
-            <select 
+            <label htmlFor="vehiculo">Vehículo</label>
+            <select
+              id="vehiculo"
               className={styles.select}
               value={selectedVehicleId}
-              onChange={(e) => setSelectedVehicleId(e.target.value === 'Selected' ? 'Selected' : parseInt(e.target.value))}
+              onChange={(e) =>
+                setSelectedVehicleId(e.target.value === "Selected" ? "Selected" : parseInt(e.target.value))
+              }
             >
               <option value="Selected">-- Selecciona tu auto --</option>
-              {vehicles.map(v => (
-                <option key={v.id} value={v.id}>{v.placa} - {v.marca} {v.modelo}</option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.placa} - {v.marca} {v.modelo}
+                </option>
               ))}
             </select>
           </div>
 
           <div className={styles.formGroup}>
-            <label>Fecha del evento</label>
-            <input 
-              type="date" 
-              className={styles.input} 
+            <label htmlFor="fecha">Fecha del evento</label>
+            <input
+              id="fecha"
+              type="date"
+              className={styles.input}
               value={fechaIncidente}
               onChange={(e) => setFechaIncidente(e.target.value)}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label>Notas Generales</label>
-            <textarea 
+            <label htmlFor="notas">Notas generales</label>
+            <textarea
+              id="notas"
               className={styles.textarea}
               placeholder="Ej: El golpe fue lateral..."
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
             />
           </div>
+        </section>
 
-          <div className={styles.formGroup}>
-            <label>Foto del daño (opcional)</label>
-            <AnalisisFoto
-              onEtiquetasSugeridas={setEtiquetasSugeridas}
-              onAgregarANotas={agregarANotas}
-            />
-          </div>
-        </div>
+        {/* DETALLE DE PIEZAS: se habilita al completar los datos del siniestro */}
+        <section className={`${styles.stepCard} ${styles.areaPiezas}`}>
+          <h2 className={styles.stepTitle}>Detalle de piezas</h2>
 
-        {/* LADO DERECHO: Piezas y Daños */}
-        <div className={styles.stepCard}>
-          <h2 className={styles.stepTitle}>2. Detalle de Piezas</h2>
-          
-          <div className={styles.formGroup}>
-            <label>Buscar Pieza</label>
-            <select 
-              className={styles.select} 
-              disabled={!piezasDisponibles.length}
-              onChange={(e) => {
-                agregarPieza(e.target.value);
-                e.target.value = "";
-              }}
-              value=""
-            >
-              <option value="">-- Añadir pieza afectada --</option>
-              {piezasDisponibles.map(p => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-            </select>
-          </div>
+          {!datosListos && (
+            <p className={styles.aviso}>
+              Elige el vehículo y la fecha en «Datos del siniestro» para habilitar esta sección.
+            </p>
+          )}
 
-          <div className={styles.listContainer}>
-            {items.length === 0 ? (
-              <div className={styles.emptyState}>
-                <p>⚠️ Selecciona piezas para cotizar.</p>
-              </div>
-            ) : (
-              items.map((item, index) => (
-                <div key={index} className={styles.itemCard}>
-                  <div className={styles.itemHeader}>
-                    <strong>⚙️ {item.nombre}</strong>
-                    <button onClick={() => eliminarItem(index)} className={styles.btnDelete}>
-                      Remover
-                    </button>
-                  </div>
+          <fieldset className={styles.fieldset} disabled={!datosListos}>
+            <div className={styles.formGroup}>
+              <label htmlFor="pieza">Buscar pieza</label>
+              <select
+                id="pieza"
+                className={styles.select}
+                disabled={!datosListos || cargandoPiezas || piezasDisponibles.length === 0}
+                onChange={(e) => {
+                  agregarPieza(e.target.value);
+                  e.target.value = "";
+                }}
+                value=""
+              >
+                <option value="">
+                  {cargandoPiezas
+                    ? "Cargando piezas..."
+                    : datosListos && piezasDisponibles.length === 0
+                      ? "No hay piezas disponibles"
+                      : "-- Añadir pieza afectada --"}
+                </option>
+                {piezasDisponibles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+              {piezasVigentes?.error && <p className={styles.errorTexto}>{piezasVigentes.error}</p>}
+            </div>
 
-                  <div className={styles.tagSection}>
-                    <p className={styles.smallLabel}>Daños identificados:</p>
-                    <div className={styles.tagsGrid}>
-                      {ETIQUETAS_DANOS.map(tag => (
-                        <button
-                          key={tag.valor}
-                          type="button"
-                          className={`${styles.tagButton} ${item.descripcion.includes(tag.valor) ? styles.tagActive : ""} ${etiquetasSugeridas.includes(tag.valor) ? styles.tagSugerida : ""}`}
-                          title={etiquetasSugeridas.includes(tag.valor) ? "Detectado en la foto" : undefined}
-                          onClick={() => toggleEtiqueta(index, tag.valor)}
-                        >
-                          {etiquetasSugeridas.includes(tag.valor) && "✨ "}{tag.emoji} {tag.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <input 
-                    type="text" 
-                    placeholder="Escribir más detalles..." 
-                    value={item.descripcion}
-                    onChange={(e) => {
-                      const newItems = [...items];
-                      newItems[index].descripcion = e.target.value;
-                      setItems(newItems);
-                    }}
-                    className={styles.input}
-                  />
+            <div className={styles.listContainer}>
+              {items.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>
+                    {datosListos
+                      ? "Las piezas son opcionales: puedes añadirlas o finalizar solo con el estimado de la foto."
+                      : "Aún no hay piezas."}
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+              ) : (
+                items.map((item, index) => (
+                  <div key={`${item.pieza_id}-${index}`} className={styles.itemCard}>
+                    <div className={styles.itemHeader}>
+                      <strong>⚙️ {item.nombre}</strong>
+                      <button type="button" onClick={() => eliminarItem(index)} className={styles.btnDelete}>
+                        Remover
+                      </button>
+                    </div>
+
+                    <div className={styles.tagSection}>
+                      <p className={styles.smallLabel}>Daños identificados:</p>
+                      <div className={styles.tagsGrid}>
+                        {ETIQUETAS_DANOS.map((tag) => (
+                          <button
+                            key={tag.valor}
+                            type="button"
+                            className={`${styles.tagButton} ${item.descripcion.includes(tag.valor) ? styles.tagActive : ""} ${etiquetasSugeridas.includes(tag.valor) ? styles.tagSugerida : ""}`}
+                            title={etiquetasSugeridas.includes(tag.valor) ? "Detectado en la foto" : undefined}
+                            onClick={() => toggleEtiqueta(index, tag.valor)}
+                          >
+                            {etiquetasSugeridas.includes(tag.valor) && "✨ "}
+                            {tag.emoji} {tag.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Escribir más detalles..."
+                      value={item.descripcion}
+                      onChange={(e) => cambiarDescripcion(index, e.target.value)}
+                      className={styles.input}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </fieldset>
+        </section>
       </div>
 
       <footer className={styles.actions}>
-        <Button 
-          color="green" 
-          onClick={enviarCotizacion} 
-          disabled={loading || items.length === 0}
-        >
+        {monto !== null && (
+          <p className={styles.notaGuardado}>
+            Se guardará el valor medio del estimado {nombreEstablecimiento(establecimiento)}.
+          </p>
+        )}
+        <Button color="green" onClick={enviarCotizacion} disabled={loading || !puedeFinalizar}>
           {loading ? "Enviando..." : "Finalizar Cotización"}
         </Button>
       </footer>
