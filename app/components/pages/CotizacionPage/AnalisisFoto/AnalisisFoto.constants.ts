@@ -35,3 +35,28 @@ export const ETIQUETA_COTIZACION: Record<string, string | null> = {
   luz_rota: "Rotura",
   llanta_baja: null,
 };
+
+// Piezas que el estimador de precios (POST /api/v1/cotizaciones/estimar) sabe cotizar.
+export const PIEZAS_ESTIMABLES = [
+  "Bumper delantero",
+  "Bumper trasero",
+  "Guardabarros",
+  "Puerta",
+  "Capó",
+] as const;
+
+// Daños que ya identifican su propia pieza: no hace falta que el usuario la asigne.
+// Hoy el catálogo de estimación no tiene precios para estas piezas.
+export const PIEZA_PROPIA: Record<string, string> = {
+  vidrio_roto: "Vidrio",
+  luz_rota: "Luz",
+  llanta_baja: "Llanta",
+};
+
+export type Establecimiento = "economico" | "multimarca" | "concesionario";
+
+export const ESTABLECIMIENTOS: { valor: Establecimiento; nombre: string; descripcion: string }[] = [
+  { valor: "economico", nombre: "Económico", descripcion: "Talleres de barrio con repuestos alternativos" },
+  { valor: "multimarca", nombre: "Multimarca", descripcion: "Talleres especializados en varias marcas" },
+  { valor: "concesionario", nombre: "Concesionario", descripcion: "Taller oficial de la marca con repuestos originales" },
+];

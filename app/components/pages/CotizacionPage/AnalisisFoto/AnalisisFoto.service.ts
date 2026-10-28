@@ -1,10 +1,19 @@
 import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 import { ERROR_MESSAGES } from "./AnalisisFoto.constants";
 
+export interface UbicacionDano {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 export interface DanoDetectado {
   tipo_dano: string;
   clase_yolo: string;
   confianza: number;
+  /** Caja del daño en píxeles de la foto original. */
+  ubicacion: UbicacionDano;
   area_relativa: number;
   severidad: string | null;
   etiqueta_costo: string | null;

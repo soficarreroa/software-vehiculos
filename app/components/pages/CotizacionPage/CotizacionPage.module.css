@@ -16,12 +16,25 @@
   margin: 0;
 }
 
-.grid {
+/* Pantalla: costo arriba; foto + datos + piezas a la izquierda; daños a la derecha */
+.pantalla {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "costo"
+    "foto"
+    "danos"
+    "datos"
+    "piezas";
   gap: 20px;
   width: 100%;
 }
+
+.areaCosto { grid-area: costo; min-width: 0; }
+.areaFoto { grid-area: foto; min-width: 0; }
+.areaDanos { grid-area: danos; min-width: 0; }
+.areaDatos { grid-area: datos; }
+.areaPiezas { grid-area: piezas; }
 
 .stepCard {
   padding: 20px 0;
@@ -30,10 +43,53 @@
 
 .stepTitle {
   font-size: 1.25rem;
-  margin-bottom: 20px;
+  margin: 0 0 20px;
   color: #334155;
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 10px;
+}
+
+.fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.fieldset:disabled {
+  opacity: 0.55;
+}
+
+.aviso {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.errorTexto {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 24px 0;
+  color: #94a3b8;
+}
+
+.emptyState p {
+  margin: 0;
+}
+
+.notaGuardado {
+  margin: 0 16px 0 0;
+  align-self: center;
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
 .formGroup {
@@ -102,13 +158,20 @@
     font-size: 2rem;
   }
 
-  .grid {
-    grid-template-columns: 1fr 1fr;
+  .pantalla {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-areas:
+      "costo costo"
+      "foto danos"
+      "datos danos"
+      "piezas danos";
+    grid-template-rows: auto auto auto 1fr;
     gap: 24px;
+    align-items: start;
   }
 
   .stepCard {
-    padding: 24px;
+    padding: 8px 0;
   }
 
   .actions {
