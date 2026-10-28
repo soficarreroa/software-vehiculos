@@ -43,6 +43,8 @@ video {
   .layoutMain {
     margin-left: 260px;
     padding: 40px;
+    /* Con width:100% + margin-left el contenido se salía 260px de la pantalla. */
+    width: auto;
   }
 }
 
