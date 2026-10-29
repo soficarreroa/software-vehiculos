@@ -9,41 +9,17 @@ import { getAuthenticatedVehicles, type Vehicle } from "@/app/lib/api/vehicles";
 import AnalisisFoto from "./AnalisisFoto/AnalisisFoto";
 import CostoEstimado from "./AnalisisFoto/CostoEstimado";
 import DanosDetectados from "./AnalisisFoto/DanosDetectados";
-import { ETIQUETA_COTIZACION, type Establecimiento } from "./AnalisisFoto/AnalisisFoto.constants";
+import { type Establecimiento } from "./AnalisisFoto/AnalisisFoto.constants";
 import type { ResultadoAnalisis } from "./AnalisisFoto/AnalisisFoto.service";
 import { useEstimacion } from "./AnalisisFoto/useEstimacion";
 import { generarPDF } from "./Cotizacion.pdf";
 import { construirObservaciones, montoMedio, nombreEstablecimiento } from "./Cotizacion.utils";
-
-// Configuración de etiquetas: label (visual), emoji (interfaz), valor (base de datos)
-const ETIQUETAS_DANOS = [
-  { label: "Rayón", emoji: "🖍️", valor: "Rayon" },
-  { label: "Abolladura", emoji: "🔨", valor: "Abolladura" },
-  { label: "Rotura", emoji: "💥", valor: "Rotura" },
-  { label: "Pintura", emoji: "🎨", valor: "Pintura" },
-  { label: "Falta pieza", emoji: "🔍", valor: "Falta pieza" },
-];
-
-interface Pieza {
-  id: number;
-  nombre: string;
-  precio_repuesto: number | null;
-  precio_mano_obra: number | null;
-  precio_pintura: number | null;
-  moneda: string | null;
-}
 
 interface ItemSeleccionado {
   pieza_id: number;
   nombre: string;
   cantidad: number;
   descripcion: string;
-}
-
-interface PiezasEstado {
-  vehiculoId: number;
-  piezas: Pieza[];
-  error: string | null;
 }
 
 export default function CotizacionPage() {
@@ -54,8 +30,7 @@ export default function CotizacionPage() {
   const [observaciones, setObservaciones] = useState("");
   const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split("T")[0]);
 
-  const [items, setItems] = useState<ItemSeleccionado[]>([]);
-  const [piezasEstado, setPiezasEstado] = useState<PiezasEstado | null>(null);
+  const [items] = useState<ItemSeleccionado[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Resultado de la foto y pieza asignada a cada daño (por índice)
@@ -67,7 +42,6 @@ export default function CotizacionPage() {
   const danos = useMemo(() => resultado?.danos_detectados ?? [], [resultado]);
   const estimacion = useEstimacion(vehiculoId, danos, asignaciones);
 
-  // Los datos del siniestro habilitan el detalle de piezas
   const datosListos = vehiculoId !== null && Boolean(fechaIncidente);
 
   // 1. Cargar vehículos
@@ -85,47 +59,6 @@ export default function CotizacionPage() {
     };
   }, []);
 
-  // 2. Cargar piezas del vehículo elegido
-  useEffect(() => {
-    if (vehiculoId === null) return;
-    let activo = true;
-    authenticatedFetch(`/api/v1/vehiculos/${vehiculoId}/piezas-disponibles`)
-      .then(async (res) => {
-        if (!res.ok) throw await readApiError(res, "No se pudieron cargar las piezas disponibles.");
-        return res.json();
-      })
-      .then((data: Pieza[]) => {
-        if (activo) {
-          setPiezasEstado({ vehiculoId, piezas: Array.isArray(data) ? data : [], error: null });
-        }
-      })
-      .catch((err: unknown) => {
-        console.error("Error cargando piezas:", err);
-        if (activo) {
-          setPiezasEstado({
-            vehiculoId,
-            piezas: [],
-            error: err instanceof Error ? err.message : "No se pudieron cargar las piezas disponibles.",
-          });
-        }
-      });
-    return () => {
-      activo = false;
-    };
-  }, [vehiculoId]);
-
-  const piezasVigentes = vehiculoId !== null && piezasEstado?.vehiculoId === vehiculoId ? piezasEstado : null;
-  const piezasDisponibles = piezasVigentes?.piezas ?? [];
-  const cargandoPiezas = vehiculoId !== null && !piezasVigentes;
-
-  // Etiquetas de daño sugeridas por la foto (solo se marcan, no se activan solas)
-  const etiquetasSugeridas = useMemo(() => {
-    const etiquetas = danos
-      .map((dano) => ETIQUETA_COTIZACION[dano.tipo_dano])
-      .filter((etiqueta): etiqueta is string => Boolean(etiqueta));
-    return [...new Set(etiquetas)];
-  }, [danos]);
-
   const alAnalizar = (nuevo: ResultadoAnalisis | null) => {
     setResultado(nuevo);
     setAsignaciones({});
@@ -133,38 +66,6 @@ export default function CotizacionPage() {
 
   const asignarPieza = (indice: number, pieza: string) => {
     setAsignaciones((actual) => ({ ...actual, [indice]: pieza }));
-  };
-
-  const agregarPieza = (piezaId: string) => {
-    if (!piezaId) return;
-    const pieza = piezasDisponibles.find((p) => p.id === parseInt(piezaId));
-    if (pieza) {
-      setItems((actual) => [
-        ...actual,
-        { pieza_id: pieza.id, nombre: pieza.nombre, cantidad: 1, descripcion: "" },
-      ]);
-    }
-  };
-
-  const eliminarItem = (index: number) => {
-    setItems((actual) => actual.filter((_, i) => i !== index));
-  };
-
-  const cambiarDescripcion = (index: number, descripcion: string) => {
-    setItems((actual) => actual.map((item, i) => (i === index ? { ...item, descripcion } : item)));
-  };
-
-  const toggleEtiqueta = (index: number, valorEtiqueta: string) => {
-    setItems((actual) =>
-      actual.map((item, i) => {
-        if (i !== index) return item;
-        const activas = item.descripcion ? item.descripcion.split(", ").filter((t) => t.trim() !== "") : [];
-        const nuevas = activas.includes(valorEtiqueta)
-          ? activas.filter((t) => t !== valorEtiqueta)
-          : [...activas, valorEtiqueta];
-        return { ...item, descripcion: nuevas.join(", ") };
-      }),
-    );
   };
 
   // Mensaje guía del cuadro de costo cuando todavía no hay estimado
@@ -214,17 +115,14 @@ export default function CotizacionPage() {
           vehiculo: vehiculoActual,
           fecha: fechaIncidente,
           estimacion: estimacion.estimacion,
-          filas: items.map((item) => {
-            const info = piezasDisponibles.find((p) => p.id === item.pieza_id);
-            return {
-              nombre: item.nombre,
-              detalle: item.descripcion,
-              repuesto: info?.precio_repuesto ?? 0,
-              manoObra: info?.precio_mano_obra ?? 0,
-              pintura: info?.precio_pintura ?? 0,
-              cantidad: item.cantidad,
-            };
-          }),
+          filas: items.map((item) => ({
+            nombre: item.nombre,
+            detalle: item.descripcion,
+            repuesto: 0,
+            manoObra: 0,
+            pintura: 0,
+            cantidad: item.cantidad,
+          })),
         });
         alert("✅ Cotización guardada y PDF generado. La verás en tu historial.");
         router.push("/historial");
@@ -320,95 +218,7 @@ export default function CotizacionPage() {
           </div>
         </section>
 
-        {/* DETALLE DE PIEZAS: se habilita al completar los datos del siniestro */}
-        <section className={`${styles.stepCard} ${styles.areaPiezas}`}>
-          <h2 className={styles.stepTitle}>Detalle de piezas</h2>
 
-          {!datosListos && (
-            <p className={styles.aviso}>
-              Elige el vehículo y la fecha en «Datos del siniestro» para habilitar esta sección.
-            </p>
-          )}
-
-          <fieldset className={styles.fieldset} disabled={!datosListos}>
-            <div className={styles.formGroup}>
-              <label htmlFor="pieza">Buscar pieza</label>
-              <select
-                id="pieza"
-                className={styles.select}
-                disabled={!datosListos || cargandoPiezas || piezasDisponibles.length === 0}
-                onChange={(e) => {
-                  agregarPieza(e.target.value);
-                  e.target.value = "";
-                }}
-                value=""
-              >
-                <option value="">
-                  {cargandoPiezas
-                    ? "Cargando piezas..."
-                    : datosListos && piezasDisponibles.length === 0
-                      ? "No hay piezas disponibles"
-                      : "-- Añadir pieza afectada --"}
-                </option>
-                {piezasDisponibles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
-              {piezasVigentes?.error && <p className={styles.errorTexto}>{piezasVigentes.error}</p>}
-            </div>
-
-            <div className={styles.listContainer}>
-              {items.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <p>
-                    {datosListos
-                      ? "Las piezas son opcionales: puedes añadirlas o finalizar solo con el estimado de la foto."
-                      : "Aún no hay piezas."}
-                  </p>
-                </div>
-              ) : (
-                items.map((item, index) => (
-                  <div key={`${item.pieza_id}-${index}`} className={styles.itemCard}>
-                    <div className={styles.itemHeader}>
-                      <strong>⚙️ {item.nombre}</strong>
-                      <button type="button" onClick={() => eliminarItem(index)} className={styles.btnDelete}>
-                        Remover
-                      </button>
-                    </div>
-
-                    <div className={styles.tagSection}>
-                      <p className={styles.smallLabel}>Daños identificados:</p>
-                      <div className={styles.tagsGrid}>
-                        {ETIQUETAS_DANOS.map((tag) => (
-                          <button
-                            key={tag.valor}
-                            type="button"
-                            className={`${styles.tagButton} ${item.descripcion.includes(tag.valor) ? styles.tagActive : ""} ${etiquetasSugeridas.includes(tag.valor) ? styles.tagSugerida : ""}`}
-                            title={etiquetasSugeridas.includes(tag.valor) ? "Detectado en la foto" : undefined}
-                            onClick={() => toggleEtiqueta(index, tag.valor)}
-                          >
-                            {etiquetasSugeridas.includes(tag.valor) && "✨ "}
-                            {tag.emoji} {tag.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <input
-                      type="text"
-                      placeholder="Escribir más detalles..."
-                      value={item.descripcion}
-                      onChange={(e) => cambiarDescripcion(index, e.target.value)}
-                      className={styles.input}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-          </fieldset>
-        </section>
       </div>
 
       <footer className={styles.actions}>

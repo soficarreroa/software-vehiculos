@@ -56,7 +56,7 @@ export default function Sidebar() {
           </Link>
         ))}
         <div className={styles.footer}>
-          <Link href="#" onClick={closeMenu} className={styles.navLink}>
+          <Link href="/ajustes" onClick={closeMenu} className={styles.navLink}>
             Ajustes
           </Link>
           <button type="button" onClick={handleLogout} className={styles.logoutButton}>

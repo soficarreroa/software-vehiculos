@@ -95,6 +95,10 @@ export default function AnalisisFoto({ onResultado }: AnalisisFotoProps) {
         </Button>
       </div>
 
+      {cargando && (
+        <Info severity="warning">La fotografía está siendo analizada para detectar posibles daños. Este proceso puede tardar unos segundos.</Info>
+      )}
+
       {error && <Info severity="error">{error}</Info>}
       {resultado && !hayDanos && (
         <Info severity="warning">{resultado.mensaje ?? "No se detectaron daños en la foto"}</Info>
