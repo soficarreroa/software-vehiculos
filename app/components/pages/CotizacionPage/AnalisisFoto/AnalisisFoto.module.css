@@ -7,6 +7,15 @@
 
 .acciones {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.acciones > * {
+  flex: 1 1 220px;
+  min-width: 0;
 }
 
 /* ---------- Foto con cajas numeradas ---------- */
