@@ -165,7 +165,7 @@ export default function CotizacionPage() {
         </div>
 
         <div className={styles.areaFoto}>
-          <AnalisisFoto onResultado={alAnalizar} />
+          <AnalisisFoto onResultado={alAnalizar} marcaVehiculo={vehicles.find((v) => v.id === selectedVehicleId)?.marca ?? null} />
         </div>
 
         <div className={styles.areaDanos}>
