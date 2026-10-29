@@ -419,7 +419,7 @@ export default function Page() {
 
       {(categoriasDesdeParams.length > 0 || tiposDesdeParams.length > 0 || marcaDesdeParams) && (
         <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-          <Info severity="info">
+          <Info severity="warning">
             Mostrando talleres sugeridos relacionados con:{" "}
             {categoriasDesdeParams.length > 0
               ? categoriasDesdeParams.join(", ")
