@@ -1,6 +1,6 @@
 import type { ClienteRegisterSchema, TallerRegisterSchema } from "./Register.schema";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { API_BASE_URL } from "@/app/lib/api/client";
 
 export interface RegisterResponse {
   message?: string;
@@ -40,13 +40,9 @@ export async function registerRequest(
   role: "cliente" | "taller",
   data: RegisterRequest,
 ): Promise<RegisterResponse> {
-  if (!API_URL) {
-    throw new Error("La URL de la API no está configurada.");
-  }
-
   let response: Response;
   try {
-    response = await fetch(`${API_URL.replace(/\/+$/, "")}/auth/registro/${role}`, {
+    response = await fetch(`${API_BASE_URL}/auth/registro/${role}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -54,7 +50,7 @@ export async function registerRequest(
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error(
-        `No se pudo conectar con el servidor (${API_URL}). Verifica que la API esté encendida y que CORS permita este frontend.`,
+        `No se pudo conectar con el servidor (${API_BASE_URL}). Verifica que la API esté encendida y que CORS permita este frontend.`,
       );
     }
     throw error;

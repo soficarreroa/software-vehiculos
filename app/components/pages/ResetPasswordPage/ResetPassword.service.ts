@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { API_BASE_URL } from "@/app/lib/api/client";
 
 export interface ResetPasswordResponse {
   message: string;
@@ -14,7 +14,7 @@ interface ResetPasswordPayload {
 export async function resetPasswordRequest(
   payload: ResetPasswordPayload
 ): Promise<ResetPasswordResponse> {
-  const response = await fetch(`${API_URL}/auth/restablecer-contrasena`, {
+  const response = await fetch(`${API_BASE_URL}/auth/restablecer-contrasena`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

@@ -1,6 +1,5 @@
 import type { LoginFormValues } from "./Login.schema";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL; 
+import { API_BASE_URL } from "@/app/lib/api/client";
 
 export interface LoginResponseUsuario {
   id: string;
@@ -20,7 +19,7 @@ export interface LoginResponse {
 }
 
 export async function loginRequest(data: LoginFormValues): Promise<LoginResponse> {
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

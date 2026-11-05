@@ -3,6 +3,9 @@ import { useState } from 'react';
 import styles from './MisVehiculosPage.module.css';
 import Button from '@/app/components/ui/Button/Button';
 
+/** Mayúsculas y sin guiones/espacios: "abc-123" y "ABC123" son la misma placa. */
+const normalizarPlaca = (valor: string) => valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
 interface VehicleFormProps {
   onAdd: (marca: string, modelo: string, color: string, placa: string) => void;
   onCancel: () => void;
@@ -21,27 +24,19 @@ export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: Vehicle
     e.preventDefault();
     setError('');
 
-    if (!marca || !modelo || !color || !placa) {
+    if (!marca.trim() || !modelo.trim() || !color.trim() || !placa.trim()) {
       setError('Por favor, completa todos los campos.');
       return;
     }
 
-    // Validar modelo como string (puede ser año o descripción)
-    if (!modelo.trim()) {
-      setError('Por favor, ingresa un modelo válido.');
+    if (!/^[A-Z0-9]{6}$/.test(normalizarPlaca(placa))) {
+      setError('La placa debe tener exactamente 6 caracteres (ej: ABC123).');
       return;
     }
 
-    if (placa.length < 6) {
-      setError('La placa debe tener al menos 6 caracteres.');
-      return;
-    }
-
-    onAdd(marca, modelo, color, placa);
-
-    if (!isEditing) {
-      setMarca(''); setModelo(''); setColor(''); setPlaca('');
-    }
+    // No se vacía el formulario aquí: si el servidor rechaza el guardado (placa repetida, error
+    // de red...) el usuario conserva lo que escribió. Al guardar bien, la página cierra el formulario.
+    onAdd(marca.trim(), modelo.trim(), color.trim(), normalizarPlaca(placa));
   };
 
   return (
@@ -78,14 +73,15 @@ export const VehicleForm = ({ onAdd, onCancel, initialData, isEditing }: Vehicle
           />
           <input 
             className={styles.formInput}
-            placeholder="Placa (ABC-123)" 
+            placeholder="Placa (Ej: ABC123)" 
             value={placa}
+            maxLength={7}
             onChange={(e) => setPlaca(e.target.value.toUpperCase())}
           />
         </div>
         
         <div className={styles.formActions}>
-          <Button color="green">
+          <Button color="green" type="submit">
             {isEditing ? 'Guardar Cambios' : 'Guardar Vehículo'}
           </Button>
           <Button onClick={onCancel} color="red">

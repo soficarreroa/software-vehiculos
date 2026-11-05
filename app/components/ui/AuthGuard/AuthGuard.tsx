@@ -7,7 +7,11 @@ import { limpiarSesion, sesionVencida } from "@/app/lib/auth/session";
 const sinSuscripcion = () => () => {};
 
 function haySesionValida(): boolean {
-  return !!localStorage.getItem("access_token") && !sesionVencida();
+  if (!localStorage.getItem("access_token")) return false;
+  // El access_token dura poco (~1 h). Si ya venció pero hay refresh_token, la sesión sigue
+  // viva: la primera petición recibe 401 y authenticatedFetch la renueva sola. Antes se
+  // echaba al usuario al login cada hora aunque su sesión era renovable.
+  return !sesionVencida() || !!localStorage.getItem("refresh_token");
 }
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {

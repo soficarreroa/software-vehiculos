@@ -46,13 +46,21 @@ interface PiezasEstado {
   error: string | null;
 }
 
+/** Fecha de hoy en la zona horaria del usuario (YYYY-MM-DD). */
+function fechaLocalISO(): string {
+  const hoy = new Date();
+  const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoy.getDate()).padStart(2, "0");
+  return `${hoy.getFullYear()}-${mes}-${dia}`;
+}
+
 export default function CotizacionPage() {
   const router = useRouter();
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | "Selected">("Selected");
   const [observaciones, setObservaciones] = useState("");
-  const [fechaIncidente, setFechaIncidente] = useState(new Date().toISOString().split("T")[0]);
+  const [fechaIncidente, setFechaIncidente] = useState(fechaLocalISO);
 
   const [items, setItems] = useState<ItemSeleccionado[]>([]);
   const [piezasEstado, setPiezasEstado] = useState<PiezasEstado | null>(null);
@@ -67,8 +75,8 @@ export default function CotizacionPage() {
   const danos = useMemo(() => resultado?.danos_detectados ?? [], [resultado]);
   const estimacion = useEstimacion(vehiculoId, danos, asignaciones);
 
-  // Los datos del siniestro habilitan el detalle de piezas
-  const datosListos = vehiculoId !== null && Boolean(fechaIncidente);
+  // Los datos del siniestro habilitan el detalle de piezas (la fecha no puede ser futura)
+  const datosListos = vehiculoId !== null && Boolean(fechaIncidente) && fechaIncidente <= fechaLocalISO();
 
   // 1. Cargar vehículos
   useEffect(() => {
@@ -302,6 +310,7 @@ export default function CotizacionPage() {
             <input
               id="fecha"
               type="date"
+              max={fechaLocalISO()}
               className={styles.input}
               value={fechaIncidente}
               onChange={(e) => setFechaIncidente(e.target.value)}

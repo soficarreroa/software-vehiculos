@@ -57,8 +57,8 @@ export default function MyVehiclesPage() {
 
   // Función para guardar vehículo con VALIDACIÓN DE PLACA
   const guardarVehiculo = async (marca: string, modelo: string, color: string, placa: string) => {
-    // 1. Validación de Placa (6 caracteres y mayúsculas)
-    const placaNormalizada = placa.trim().toUpperCase();
+    // 1. Validación de Placa (6 caracteres alfanuméricos, mayúsculas, sin guiones ni espacios)
+    const placaNormalizada = placa.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     
     if (placaNormalizada.length !== 6) {
       setError("❌ La placa debe tener exactamente 6 caracteres (ej: AAA123)");
@@ -117,9 +117,7 @@ const eliminarVehiculo = async (id: number) => {
         if (response.status === 404) {
           throw new Error("Vehículo no encontrado o no pertenece al usuario actual.");
         }
-        if (response.status === 500 || response.status === 409) {
-          throw new Error("No puedes borrar este vehículo porque ya tiene cotizaciones o procesos asociados.");
-        }
+        // 409: el servidor explica el motivo (p. ej. el vehículo ya tiene cotizaciones).
         throw await readApiError(response, "No se pudo eliminar el vehículo.");
       }
 

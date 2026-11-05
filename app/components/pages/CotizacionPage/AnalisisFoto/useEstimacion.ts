@@ -26,7 +26,12 @@ export function useEstimacion(
     .map(([indice, pieza]) => ({ indice_dano: Number(indice), pieza }));
 
   const listo = vehiculoId !== null && danos.length > 0 && asignadas.length > 0;
-  const clave = JSON.stringify({ vehiculoId, danos: danos.length, asignadas });
+  const clave = JSON.stringify({
+    vehiculoId,
+    // Antes solo contaba los daños: con otra foto con la misma cantidad se mostraba un estimado viejo.
+    danos: danos.map((d) => [d.tipo_dano, d.severidad, d.confianza]),
+    asignadas,
+  });
 
   useEffect(() => {
     if (!listo || vehiculoId === null) return;

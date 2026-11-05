@@ -51,8 +51,8 @@ export const historyService = {
   const link = document.createElement("a");
   link.href = url;
   
-  // Nombre fijo para la descarga
-  link.download = "Reporte_Autoperito.pdf";
+  // Un nombre distinto por reporte (antes todos se llamaban igual y el navegador renombraba con (1), (2)...)
+  link.download = `Reporte_Autoperito_${cotizacionId}.pdf`;
 
   document.body.appendChild(link);
   link.click();
