@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import WorkshopCard from "../../components/pages/TalleresAliadosPage/WorkshopCard";
 import SearchBar from "../../components/pages/TalleresAliadosPage/SearchBar";
@@ -30,6 +31,80 @@ import styles from "../../components/pages/TalleresAliadosPage/talleresaliados.m
 import RoleGate from "@/app/lib/auth/RoleGate";
 import { authenticatedFetch, readApiError } from "@/app/lib/api/client";
 
+function normalizarCategoriaValor(valor: unknown): string[] {
+  const resultados: string[] = [];
+
+  if (valor === null || valor === undefined) {
+    return resultados;
+  }
+
+  if (Array.isArray(valor)) {
+    for (const item of valor) {
+      resultados.push(...normalizarCategoriaValor(item));
+    }
+    return resultados;
+  }
+
+  if (typeof valor === "object") {
+    const obj = valor as Record<string, unknown>;
+    if (typeof obj.nombre === "string") {
+      resultados.push(...normalizarCategoriaValor(obj.nombre));
+    } else if (typeof obj.categoria === "string") {
+      resultados.push(...normalizarCategoriaValor(obj.categoria));
+    }
+    return resultados;
+  }
+
+  if (typeof valor !== "string") {
+    return resultados;
+  }
+
+  const partes = valor.split(",");
+  for (const parte of partes) {
+    const normalizada = parte
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (normalizada) {
+      resultados.push(normalizada);
+    }
+  }
+
+  return resultados;
+}
+
+function categoriasCoinciden(categoriaTaller: unknown, categoriasFiltro: string[]) {
+  if (categoriasFiltro.length === 0) return true;
+  const catNorms = normalizarCategoriaValor(categoriaTaller);
+  if (catNorms.length === 0) return false;
+
+  for (const filtro of categoriasFiltro) {
+    const filtroNorms = normalizarCategoriaValor(filtro);
+    if (filtroNorms.length === 0) continue;
+    for (const filtroNorm of filtroNorms) {
+      if (!filtroNorm) continue;
+      for (const catNorm of catNorms) {
+        if (catNorm === filtroNorm) return true;
+        if (catNorm.includes(filtroNorm) || filtroNorm.includes(catNorm)) return true;
+        if (filtroNorm === "carroceria" && (catNorm.includes("latoneria") || catNorm.includes("pintura"))) {
+          return true;
+        }
+        if (catNorm === "carroceria" && (filtroNorm.includes("latoneria") || filtroNorm.includes("pintura"))) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function esMecanicaGeneral(categoriaTaller: unknown): boolean {
+  const catNorms = normalizarCategoriaValor(categoriaTaller);
+  return catNorms.includes("mecanica general");
+}
+
 const WorkshopMap = dynamic(
   () => import("../../components/pages/TalleresAliadosPage/WorkshopMap"),
   {
@@ -39,6 +114,8 @@ const WorkshopMap = dynamic(
 );
 
 export default function Page() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -60,6 +137,16 @@ export default function Page() {
     marcas_soportadas: "",
     certificado: false,
   });
+
+  const tiposDesdeParams = (searchParams.get("tipos") || "")
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  const categoriasDesdeParams = (searchParams.get("categorias") || "")
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
+  const marcaDesdeParams = (searchParams.get("marca") || "").trim();
 
   // --- Casos límite ---------------------------------------------------
   const [estadoGeo, setEstadoGeo] = useState<EstadoGeo>({ tipo: "inactivo" });
@@ -144,8 +231,9 @@ export default function Page() {
   }, []);
 
   const baseWorkshops = geoMode === "nearby" ? nearbyWorkshops : workshops;
+  const hayFiltroPorDanios = categoriasDesdeParams.length > 0 || tiposDesdeParams.length > 0;
 
-  const filteredWorkshops = baseWorkshops.filter((workshop) => {
+  const talleresConFiltroBase = baseWorkshops.filter((workshop) => {
     if (!workshop.nombre || !workshop.direccion || !workshop.categoria) return false;
 
     const matchesSearch =
@@ -159,8 +247,44 @@ export default function Page() {
           (m: string) => m.toLowerCase() === filterValue.toLowerCase()
         ));
 
-    return matchesSearch && matchesFilter;
+    const matchesMarcaParam =
+      !marcaDesdeParams ||
+      (workshop.marcas_soportadas &&
+        workshop.marcas_soportadas.some(
+          (m: string) => m.toLowerCase() === marcaDesdeParams.toLowerCase()
+        ));
+
+    return matchesSearch && matchesFilter && matchesMarcaParam;
   });
+
+  let filteredWorkshops = talleresConFiltroBase;
+
+  if (hayFiltroPorDanios) {
+    const coincideCategoriaEspecifica = (workshop: Workshop) =>
+      categoriasCoinciden(workshop.categoria, categoriasDesdeParams);
+    const admiteMarca = (workshop: Workshop) => {
+      if (!marcaDesdeParams) return true;
+      if (!workshop.marcas_soportadas || !Array.isArray(workshop.marcas_soportadas) || workshop.marcas_soportadas.length === 0) return true;
+      return workshop.marcas_soportadas.some((m: string) => typeof m === "string" && m.toLowerCase() === marcaDesdeParams.toLowerCase());
+    };
+
+    const especificos = talleresConFiltroBase.filter(
+      (w) => coincideCategoriaEspecifica(w) && admiteMarca(w),
+    );
+    const mecanicaGeneral = talleresConFiltroBase.filter(
+      (w) => esMecanicaGeneral(w.categoria) && !coincideCategoriaEspecifica(w) && admiteMarca(w),
+    );
+
+    const combinados = [...especificos, ...mecanicaGeneral];
+    const vistos = new Set<number>();
+    filteredWorkshops = combinados.filter((w) => {
+      if (vistos.has(w.id)) return false;
+      vistos.add(w.id);
+      return true;
+    });
+  } else {
+    filteredWorkshops = talleresConFiltroBase;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +367,10 @@ export default function Page() {
     if (estadoGeo.tipo === "error") return estadoGeo.causa;
     if (estadoGeo.tipo === "sin-resultados") return "sin-resultados";
     if (baseWorkshops.length === 0) return "sin-talleres";
-    if (filteredWorkshops.length === 0) return "sin-coincidencias";
+    if (filteredWorkshops.length === 0) {
+      if (hayFiltroPorDanios) return "sin-coincidencias";
+      return "sin-coincidencias";
+    }
     return null;
   })();
 
@@ -289,6 +416,29 @@ export default function Page() {
           </button>
         )}
       </div>
+
+      {(categoriasDesdeParams.length > 0 || tiposDesdeParams.length > 0 || marcaDesdeParams) && (
+        <div style={{ marginBottom: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <Info severity="warning">
+            Mostrando talleres sugeridos relacionados con:{" "}
+            {categoriasDesdeParams.length > 0
+              ? categoriasDesdeParams.join(", ")
+              : tiposDesdeParams.join(", ")}
+            {marcaDesdeParams ? ` · Marca: ${marcaDesdeParams}` : ""}
+            {tiposDesdeParams.length > 0 ? ` (daños: ${tiposDesdeParams.join(", ")})` : ""}. Su capacidad para reparar el daño debe confirmarse directamente.
+          </Info>
+          <div>
+            <button
+              className={styles.nearbyBackButton}
+              onClick={() => {
+                router.push("/talleres-aliados");
+              }}
+            >
+              Limpiar filtro del análisis
+            </button>
+          </div>
+        </div>
+      )}
 
       <SearchBar
         onSearch={setSearchValue}
